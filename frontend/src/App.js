@@ -209,7 +209,8 @@ function App() {
     formData.append("planilha_custos", planilhaCustos);
     formData.append("relacao_frotas", relacaoFrotas);
 
-    const API_BASE_URL = process.env.REACT_APP_API_URL || "/api";
+    // Usar diretamente a URL do Render em vez de depender de variáveis de ambiente
+    const API_BASE_URL = "https://frota-api-qro2.onrender.com";
 
     try {
       const response = await fetch(`${API_BASE_URL}/previa-dados/`, {
@@ -267,7 +268,8 @@ function App() {
 
     try {
       // Teste de conectividade com o backend
-      const API_BASE_URL = process.env.REACT_APP_API_URL || "/api";
+      // Usar diretamente a URL do Render em vez de depender de variáveis de ambiente
+      const API_BASE_URL = "https://frota-api-qro2.onrender.com";
       try {
         console.log("Testando conexão com o backend...");
         await fetch(`${API_BASE_URL}/teste/`)

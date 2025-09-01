@@ -1,25 +1,7 @@
 {
-  "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "https://frota-api-qro2.onrender.com/:path*"
-    },
-    {
-      "source": "/api/previa-dados",
-      "destination": "https://frota-api-qro2.onrender.com/previa-dados"
-    },
-    {
-      "source": "/api/processar-planilhas",
-      "destination": "https://frota-api-qro2.onrender.com/processar-planilhas"
-    },
-    {
-      "source": "/api/teste",
-      "destination": "https://frota-api-qro2.onrender.com/teste"
-    }
-  ],
   "build": {
     "env": {
-      "REACT_APP_API_URL": "/api"
+      "REACT_APP_API_URL": "https://frota-api-qro2.onrender.com"
     }
   },
   "headers": [
