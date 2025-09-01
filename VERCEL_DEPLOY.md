@@ -104,17 +104,98 @@ Esta é a abordagem recomendada para aplicações que processam arquivos grandes
    - DigitalOcean App Platform
    - Heroku
 
-2. Atualize o arquivo `vercel.json` no frontend com a URL correta:
+#### Implantando o Backend no Render
+
+O Render é uma ótima escolha para hospedar seu backend Python.
+
+**Para instruções detalhadas, consulte o arquivo [RENDER_DEPLOY.md](RENDER_DEPLOY.md)**
+
+Resumo das etapas:
+
+1. **Crie uma conta no Render**:
+
+   - Acesse [https://render.com](https://render.com) e registre-se
+   - Você pode usar sua conta GitHub para agilizar o processo
+
+2. **Prepare seu repositório**:
+
+   - Certifique-se de que o arquivo `requirements.txt` está atualizado
+   - Crie um arquivo `render.yaml` na raiz do backend:
+     ```yaml
+     services:
+       - type: web
+         name: frota-api
+         env: python
+         buildCommand: pip install -r requirements.txt
+         startCommand: cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+         envVars:
+           - key: AMBIENTE
+             value: producao
+     ```
+
+3. **Implante o serviço no Render**:
+
+   - No dashboard do Render, clique em "New +"
+   - Selecione "Web Service"
+   - Conecte seu repositório GitHub
+   - Configure as opções:
+     - Nome: frota-api
+     - Ambiente: Python
+     - Região: Escolha a mais próxima do seu público
+     - Branch: main
+     - Diretório raiz: `backend` (ou deixe em branco se seu repositório só contém o backend)
+     - Comando de Build: `pip install -r requirements.txt`
+     - Comando de Start: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+   - Clique em "Create Web Service"
+
+4. **Configure variáveis de ambiente**:
+
+   - No painel do serviço, vá para "Environment"
+   - Adicione as variáveis necessárias:
+     - `AMBIENTE`: producao
+     - `ALLOWED_ORIGINS`: https://calculos-despesas-frotas.vercel.app
+     - Outras variáveis conforme necessário
+
+5. **Ajuste os recursos**:
+
+   - O plano gratuito do Render tem algumas limitações, mas é bom para começar
+   - Para processamento de arquivos grandes, considere atualizar para um plano pago
+
+6. Atualize o arquivo `vercel.json` no frontend com a URL do Render:
+
    ```json
    {
      "rewrites": [
        {
          "source": "/api/:path*",
-         "destination": "https://seu-backend.railway.app/api/:path*"
+         "destination": "https://frota-api-qro2.onrender.com/api/:path*"
        }
      ]
    }
    ```
+
+   **Nota**: Substitua `frota-api.onrender.com` pela URL real do seu serviço no Render. O Render fornecerá um domínio no formato `nome-do-app.onrender.com`.
+
+7. **Integração do Vercel com o Render**:
+
+   - No Render, certifique-se de configurar os cabeçalhos CORS:
+
+     ```python
+     # No arquivo app/main.py do backend
+     from fastapi.middleware.cors import CORSMiddleware
+
+     app.add_middleware(
+         CORSMiddleware,
+         allow_origins=["https://calculos-despesas-frotas.vercel.app"],
+         allow_credentials=True,
+         allow_methods=["*"],
+         allow_headers=["*"],
+     )
+     ```
+
+   - Teste a comunicação entre frontend e backend:
+     - Implante uma versão inicial do frontend no Vercel
+     - Faça uma chamada simples para verificar se a API está respondendo
 
 ### 3.2 Usando Vercel Serverless Functions (Limitado)
 

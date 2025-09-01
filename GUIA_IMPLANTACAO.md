@@ -34,11 +34,11 @@ Este script irá:
 1. Configure as variáveis de ambiente no arquivo `.env.production`:
 
 ```
-API_HOST=seu-dominio-ou-ip
+API_HOST=0.0.0.0
 API_PORT=8000
-FRONTEND_URL=https://seu-dominio.com
+FRONTEND_URL=https://calculos-despesas-frotas.vercel.app
 LOG_LEVEL=info
-CORS_ORIGINS=https://seu-dominio.com
+CORS_ORIGINS=https://calculos-despesas-frotas.vercel.app
 ```
 
 2. Configure o banco de dados (se necessário)
@@ -260,6 +260,10 @@ REM Copiar arquivos para o servidor
 echo Copiando arquivos para o servidor...
 robocopy "frontend\build" "\\servidor\caminho\para\www" /E
 robocopy "backend" "\\servidor\caminho\para\api" /E /XD "venv" "__pycache__"
+
+REM URLs de produção:
+echo Frontend: https://calculos-despesas-frotas.vercel.app
+echo Backend: https://frota-api-qro2.onrender.com
 
 echo Implantação concluída!
 ```
