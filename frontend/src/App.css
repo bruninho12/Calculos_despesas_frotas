@@ -1,0 +1,176 @@
+body {
+  background: linear-gradient(120deg, #e3f0ff 0%, #f7f7f7 100%);
+  min-height: 100vh;
+  font-family: "Segoe UI", "Roboto", Arial, sans-serif;
+  margin: 0;
+}
+
+/* Estilos para o componente de progresso */
+.progress-container {
+  margin: 16px 0;
+}
+
+.progress-bar {
+  height: 10px;
+  background-color: #e0e0e0;
+  border-radius: 5px;
+  overflow: hidden;
+  margin-bottom: 5px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #1976d2, #42a5f5);
+  transition: width 0.3s ease;
+  border-radius: 5px;
+}
+
+.progress-text {
+  font-size: 0.9rem;
+  color: #555;
+  text-align: center;
+}
+
+/* Estilos para a previsualização de arquivos */
+.file-preview {
+  margin-top: 8px;
+  padding: 10px;
+  background: #f0f7ff;
+  border-radius: 5px;
+  border-left: 4px solid #1976d2;
+}
+
+.file-preview p {
+  margin: 0 0 8px 0;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.preview-button {
+  background: transparent;
+  color: #1976d2;
+  border: 1px solid #1976d2;
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.preview-button:hover {
+  background: #1976d2;
+  color: white;
+}
+
+.App h1 {
+  font-size: 2.2rem;
+  color: #1976d2;
+  font-weight: 700;
+  margin-bottom: 0.5em;
+}
+
+.App p {
+  color: #444;
+  font-size: 1.1rem;
+  margin-bottom: 2em;
+}
+
+form {
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 4px 24px #0002;
+  padding: 2.5em 2em 2em 2em;
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5em;
+}
+
+form h3 {
+  color: #1976d2;
+  margin-bottom: 0.5em;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+input[type="file"] {
+  display: block;
+  margin-top: 0.5em;
+  font-size: 1rem;
+  border: 1px solid #cfd8dc;
+  border-radius: 6px;
+  padding: 0.4em 0.6em;
+  background: #f5faff;
+  width: 100%;
+  cursor: pointer;
+}
+
+button[type="submit"] {
+  background: linear-gradient(90deg, #1976d2 60%, #42a5f5 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  padding: 0.9em 0;
+  margin-top: 0.5em;
+  cursor: pointer;
+  transition: background 0.2s;
+  box-shadow: 0 2px 8px #1976d220;
+}
+button[type="submit"]:hover:not(:disabled) {
+  background: linear-gradient(90deg, #1565c0 60%, #1976d2 100%);
+}
+button[type="submit"]:disabled {
+  background: #b0bec5;
+  cursor: not-allowed;
+}
+
+.App .mensagem-erro {
+  margin-top: 1.5em;
+  color: #b71c1c;
+  background: #ffcdd2;
+  padding: 1em;
+  border-radius: 8px;
+  font-weight: 500;
+}
+.App .mensagem-sucesso {
+  margin-top: 1.5em;
+  color: #1b5e20;
+  background: #c8e6c9;
+  padding: 1em;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.App .info-box {
+  max-width: 700px;
+  margin: 3em auto 0 auto;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 4px 24px #0002;
+  padding: 2.5em 2em 2em 2em;
+}
+.App .info-box h2 {
+  color: #1976d2;
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 1em;
+}
+.App .info-box ol {
+  color: #444;
+  font-size: 1.05rem;
+  padding-left: 1.2em;
+}
+
+@media (max-width: 600px) {
+  .App h1 {
+    font-size: 1.3rem;
+  }
+  form,
+  .App .info-box {
+    padding: 1.2em 0.5em 1em 0.5em;
+    max-width: 98vw;
+  }
+}
