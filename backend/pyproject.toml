@@ -1,0 +1,11 @@
+[build-system]
+requires = ["setuptools>=65.5.0", "wheel>=0.38.0", "setuptools-scm>=7.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["app"]
+
+[project]
+name = "frota-api"
+version = "1.0.0"
+description = "API para processamento de planilhas de frotas"
