@@ -209,8 +209,10 @@ function App() {
     formData.append("planilha_custos", planilhaCustos);
     formData.append("relacao_frotas", relacaoFrotas);
 
+    const API_BASE_URL = process.env.REACT_APP_API_URL || "/api";
+
     try {
-      const response = await fetch("http://localhost:8000/previa-dados/", {
+      const response = await fetch(`${API_BASE_URL}/previa-dados/`, {
         method: "POST",
         body: formData,
       });
@@ -265,9 +267,10 @@ function App() {
 
     try {
       // Teste de conectividade com o backend
+      const API_BASE_URL = process.env.REACT_APP_API_URL || "/api";
       try {
         console.log("Testando conexão com o backend...");
-        await fetch("http://localhost:8000/teste/")
+        await fetch(`${API_BASE_URL}/teste/`)
           .then((response) => {
             console.log("Resposta do teste:", response.status);
             if (!response.ok) {
@@ -283,7 +286,7 @@ function App() {
         console.error("Erro ao testar conexão:", testError);
       }
 
-      const url = "http://localhost:8000/processar-planilhas/";
+      const url = `${API_BASE_URL}/processar-planilhas/`;
       console.log("URL da requisição:", url);
 
       // Usando XMLHttpRequest para acompanhar o progresso do upload
