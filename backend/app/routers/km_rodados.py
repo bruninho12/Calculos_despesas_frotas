@@ -254,13 +254,30 @@ async def processar_km_rodados(
             ("KM_MAX", "max")
         ]).reset_index()
         
-        # Calcular KM rodados com verificação de dados ausentes
-def calcular_km_rodado(row):
-    if pd.isna(row["KM_MIN"]) or pd.isna(row["KM_MAX"]):
-        return "Dados insuficientes para cálculo"
-    return row["KM_MAX"] - row["KM_MIN"]
+# Função robusta para calcular KM rodado com validações
+def calcular_km_rodado(row: pd.Series) -> float | str:
+    km_min = row.get("KM_MIN")
+    km_max = row.get("KM_MAX")
 
+    if pd.isna(km_min) or pd.isna(km_max):
+        return "Dados insuficientes para cálculo"
+
+    if not isinstance(km_min, (int, float)) or not isinstance(km_max, (int, float)):
+        return "Valores inválidos de KM"
+
+    if km_max < km_min:
+        return "KM_MAX menor que KM_MIN"
+
+    km_rodado = km_max - km_min
+
+    if km_rodado == 0:
+        return "Nenhum deslocamento registrado"
+
+    return round(km_rodado, 2)
+
+# Aplicar a função ao DataFrame
 km_mensal["Km Rodados Mês"] = km_mensal.apply(calcular_km_rodado, axis=1)
+
 
         
         # CÁLCULO 2: Quantidade de Litros Consumidos
