@@ -247,36 +247,32 @@ async def processar_km_rodados(
         km_df["NUM_FROTA"] = km_df["NUM_FROTA"].astype(str)
         organizada_df["NUM_FROTA"] = organizada_df["NUM_FROTA"].astype(str)
         
-        # CÁLCULO 1: Km Rodados por Mês (KM_MAX - KM_MIN)
-        # Agrupar por Frota e Mês, calcular KM_MIN e KM_MAX
-        km_mensal = km_df.groupby(["NUM_FROTA", "MES_ANO"])["KM_ATUAL"].agg([
-            ("KM_MIN", "min"),
-            ("KM_MAX", "max")
-        ]).reset_index()
-        
-# Função robusta para calcular KM rodado com validações
-def calcular_km_rodado(row: pd.Series) -> float | str:
-    km_min = row.get("KM_MIN")
-    km_max = row.get("KM_MAX")
+        # Garantir que KM_ATUAL seja numérico
+km_df["KM_ATUAL"] = pd.to_numeric(km_df["KM_ATUAL"], errors="coerce")
+
+# Garantir que MES_ANO seja datetime
+km_df["MES_ANO"] = pd.to_datetime(km_df["MES_ANO"], errors="coerce")
+
+# Função para calcular o KM rodado de forma robusta
+def calcular_km_rodado(grupo: pd.DataFrame):
+    grupo = grupo.sort_values("MES_ANO")
+    km_min = grupo["KM_ATUAL"].iloc[0]
+    km_max = grupo["KM_ATUAL"].iloc[-1]
 
     if pd.isna(km_min) or pd.isna(km_max):
-        return "Dados insuficientes para cálculo"
-
-    if not isinstance(km_min, (int, float)) or not isinstance(km_max, (int, float)):
-        return "Valores inválidos de KM"
-
+        return "Dados insuficientes"
     if km_max < km_min:
-        return "KM_MAX menor que KM_MIN"
+        return "Odômetro resetado ou dados inconsistentes"
+    return round(km_max - km_min, 2)
 
-    km_rodado = km_max - km_min
+# Agrupar por Frota e Mês (usando Period para evitar mistura de datas)
+km_mensal = (
+    km_df.groupby(["NUM_FROTA", km_df["MES_ANO"].dt.to_period("M")])
+         .apply(calcular_km_rodado)
+         .reset_index()
+)
 
-    if km_rodado == 0:
-        return "Nenhum deslocamento registrado"
-
-    return round(km_rodado, 2)
-
-# Aplicar a função ao DataFrame
-km_mensal["Km Rodados Mês"] = km_mensal.apply(calcular_km_rodado, axis=1)
+km_mensal.columns = ["NUM_FROTA", "MES_ANO", "Km Rodados Mês"]
 
 
         
