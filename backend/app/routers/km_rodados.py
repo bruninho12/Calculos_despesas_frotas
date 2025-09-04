@@ -251,20 +251,22 @@ async def processar_km_rodados(
         km_df["KM_ATUAL"] = pd.to_numeric(km_df["KM_ATUAL"], errors="coerce")
 
         # CÁLCULO 1: Km Rodados por Mês (KM_MAX - KM_MIN)
-        def calcula_km_rodado(row):
-            # Só retorna mensagem se realmente faltar um dos dois
-            if row["KM_MIN"] is None or row["KM_MAX"] is None or pd.isna(row["KM_MIN"]) or pd.isna(row["KM_MAX"]):
+        def calcula_km_rodado(grupo):
+            # Ignorar valores zerados
+            km_validos = grupo[grupo["KM_ATUAL"] > 0]["KM_ATUAL"]
+            if len(km_validos) < 2:
                 return "Dados insuficientes para cálculo"
-            try:
-                resultado = float(row["KM_MAX"]) - float(row["KM_MIN"])
-                if resultado < 0:
-                    return 0.0
-                return round(resultado, 3)
-            except Exception:
-                return "Dados insuficientes para cálculo"
+            km_min = km_validos.min()
+            km_max = km_validos.max()
+            resultado = km_max - km_min
+            return round(resultado, 3)
 
-        km_mensal = km_df.groupby(["NUM_FROTA", "MES_ANO"])["KM_ATUAL"].agg(KM_MIN="min", KM_MAX="max").reset_index()
-        km_mensal["Km Rodados Mês"] = km_mensal.apply(calcula_km_rodado, axis=1)
+        km_mensal = (
+            km_df.groupby(["NUM_FROTA", "MES_ANO"])
+            .apply(calcula_km_rodado)
+            .reset_index()
+            .rename(columns={0: "Km Rodados Mês"})
+        )
         # Organizar por NUM_FROTA e MES_ANO
         km_mensal = km_mensal.sort_values(["NUM_FROTA", "MES_ANO"]).reset_index(drop=True)
         
