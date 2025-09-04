@@ -1,68 +1,58 @@
-import React from 'react';
-import styled from 'styled-components';
+import React from "react";
+import { AppBar, Toolbar, Typography, Container, Box } from "@mui/material";
+import { styled } from "@mui/material/styles";
+import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 
-const HeaderContainer = styled.header`
-  background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
-  color: white;
-  padding: 2rem;
-  margin-bottom: 2rem;
-  border-radius: 10px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-`;
+const StyledAppBar = styled(AppBar)(({ theme }) => ({
+  background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
+  boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+  position: "relative",
+  marginBottom: theme.spacing(4),
+  borderRadius: theme.shape.borderRadius,
+}));
 
-const Title = styled.h1`
-  font-size: 2.5rem;
-  font-weight: 700;
-  margin-bottom: 1rem;
-  text-align: center;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
-`;
+const LogoBox = styled(Box)(({ theme }) => ({
+  display: "flex",
+  alignItems: "center",
+  gap: theme.spacing(2),
+}));
 
-const Subtitle = styled.p`
-  font-size: 1.2rem;
-  opacity: 0.9;
-  text-align: center;
-  max-width: 800px;
-  margin: 0 auto;
-`;
-
-const Logo = styled.div`
-  text-align: center;
-  margin-bottom: 1.5rem;
-  
-  img {
-    height: 80px;
-    width: auto;
-  }
-`;
+const StyledToolbar = styled(Toolbar)(({ theme }) => ({
+  paddingTop: theme.spacing(2),
+  paddingBottom: theme.spacing(2),
+  flexDirection: "column",
+  alignItems: "center",
+  textAlign: "center",
+  [theme.breakpoints.up("sm")]: {
+    flexDirection: "row",
+    justifyContent: "center",
+  },
+}));
 
 const Header = () => {
   return (
-    <HeaderContainer>
-      <Logo>
-        {/* Aqui você pode adicionar o logo da empresa */}
-        {/* <img src="/logo.png" alt="Logo da Empresa" /> */}
-      </Logo>
-      <Title>Sistema de Gestão de Frotas</Title>
-      <Subtitle>
-        Sistema profissional para processamento e análise de dados de frotas
-      </Subtitle>
-    </HeaderContainer>
+    <StyledAppBar position="static">
+      <Container maxWidth="lg">
+        <StyledToolbar>
+          <LogoBox>
+            <LocalShippingIcon sx={{ fontSize: 40 }} />
+            <Box>
+              <Typography
+                variant="h4"
+                component="h1"
+                sx={{ fontWeight: "bold" }}
+              >
+                Sistema de Gestão de Frotas
+              </Typography>
+              <Typography variant="subtitle1" sx={{ opacity: 0.9, mt: 1 }}>
+                Processamento e Análise de Dados de Frotas
+              </Typography>
+            </Box>
+          </LogoBox>
+        </StyledToolbar>
+      </Container>
+    </StyledAppBar>
   );
 };
-
-export default Header;om "react";
-
-function Header() {
-  return (
-    <header className="header fade-in">
-      <div className="logo-container">
-        {/* Aqui você pode adicionar o logo da empresa */}
-      </div>
-      <h1>Sistema de Gestão de Frotas</h1>
-      <p>Processamento e Análise de Dados de Frotas</p>
-    </header>
-  );
-}
 
 export default Header;
