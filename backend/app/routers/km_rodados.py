@@ -255,7 +255,13 @@ async def processar_km_rodados(
         ]).reset_index()
         
         # Calcular KM rodados
-        km_mensal["Km Rodados Mês"] = km_mensal["KM_MAX"] - km_mensal["KM_MIN"]
+        # Calcular KM rodados, mas se faltar min/max, retorna mensagem personalizada
+        def calcula_km_rodado(row):
+            if pd.isna(row["KM_MIN"]) or pd.isna(row["KM_MAX"]):
+                return "Dados insuficientes para cálculo"
+            return row["KM_MAX"] - row["KM_MIN"]
+
+        km_mensal["Km Rodados Mês"] = km_mensal.apply(calcula_km_rodado, axis=1)
         
         # CÁLCULO 2: Quantidade de Litros Consumidos
         # Filtrar apenas lançamentos de combustível
