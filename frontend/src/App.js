@@ -1,6 +1,49 @@
-import React, { useState } from "react";
-import "./App.css";
-import ProcessarKM from "./components/ProcessarKM";
+import React, { useState } from 'react';
+import { ThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import theme from './theme';
+import ProcessarKM from './components/ProcessarKM';
+import Header from './components/Header';
+import UploadForm from './components/UploadForm';
+import Message from './components/Message';
+import { PageContainer, ContentContainer } from './components/StyledComponents';
+
+const AppContainer = styled.div`
+  min-height: 100vh;
+  padding: 2rem;
+  background: #ecf0f1;
+`;
+
+const MainContent = styled.main`
+  max-width: 1200px;
+  margin: 0 auto;
+`;
+import Header from "./components/Header";
+import FileInput from "./components/FileInput";
+import Button from "./components/Button";
+import DataTable from "./components/DataTable";
+
+function Message({ type, children }) {
+  return (
+    <div className={`message message-${type}`}>
+      {children}
+    </div>
+  );
+}
+
+function ProgressBar({ progress }) {
+  return (
+    <div className="progress-container">
+      <div className="progress-bar">
+        <div className="progress-fill" style={{ width: `${progress}%` }} />
+      </div>
+      <div className="progress-text">{progress}% Concluído</div>
+    </div>
+  );
+import Header from "./components/Header";
+import FileInput from "./components/FileInput";
+import Button from "./components/Button";
+import DataTable from "./components/DataTable";
 
 function PreviewTable({ data, title }) {
   if (!data || !data.primeiras_linhas || data.primeiras_linhas.length === 0) {
@@ -131,6 +174,25 @@ function CorrespondenciaInfo({ data }) {
             ))
           : "Nenhuma"}
       </div>
+    </div>
+  );
+}
+
+function Message({ type, children }) {
+  return (
+    <div className={`message message-${type}`}>
+      {children}
+    </div>
+  );
+}
+
+function ProgressBar({ progress }) {
+  return (
+    <div className="progress-container">
+      <div className="progress-bar">
+        <div className="progress-fill" style={{ width: `${progress}%` }} />
+      </div>
+      <div className="progress-text">{progress}% Concluído</div>
     </div>
   );
 }
@@ -433,70 +495,30 @@ function App() {
   };
 
   return (
-    <div
-      className="App"
-      style={{ minHeight: "100vh", background: "#fff", padding: "1rem" }}
-    >
-      {telaAtual === "processar-km" ? (
-        <>
-          <button
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <PageContainer>
+        <Header />
+        {telaAtual === "processar-km" ? (
+        <ContentContainer>
+          <Button
+            variant="outlined"
+            startIcon={<KeyboardArrowLeftIcon />}
             onClick={voltarParaInicial}
-            style={{
-              padding: "8px 15px",
-              background: "#6c757d",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-              marginBottom: "20px",
-              display: "flex",
-              alignItems: "center",
-              fontSize: "14px",
-            }}
+            sx={{ mb: 3 }}
           >
-            ← Voltar para processamento inicial
-          </button>
+            Voltar para processamento inicial
+          </Button>
           <ProcessarKM planilhaOrganizada={planilhaProcessada} />
         </>
       ) : (
-        <>
-          <h1
-            style={{ textAlign: "center", marginBottom: 16, color: "#1976d2" }}
-          >
-            Sistema de Processamento de Planilhas de Frotas
-          </h1>
-          <p style={{ textAlign: "center", marginBottom: 20, color: "#555" }}>
-            Faça upload dos arquivos para processamento automático
-          </p>
-          <form
-            onSubmit={handleSubmit}
-            style={{
-              maxWidth: 500,
-              margin: "0 auto",
-              background: "#fff",
-              border: "1px solid #ddd",
-              borderRadius: 8,
-              padding: 24,
-            }}
-          >
-            <div style={{ marginBottom: 20 }}>
-              <h3
-                style={{ fontSize: "1.1rem", color: "#333", marginBottom: 10 }}
-              >
-                Planilha de Custos
-              </h3>
-              <input
-                type="file"
-                accept=".xlsx,.xls"
-                onChange={(e) => handleSelectFile(e, "custos")}
-                required
-                style={{
-                  width: "100%",
-                  padding: "8px",
-                  border: "1px solid #ddd",
-                  borderRadius: "4px",
-                }}
-              />
+        <ContentContainer>
+          <form onSubmit={handleSubmit}>
+            <FileInput
+              label="Planilha de Custos"
+              accept=".xlsx,.xls"
+              onChange={(e) => handleSelectFile(e, "custos")}
+              required
               {previewData.custos && (
                 <div
                   style={{

@@ -344,20 +344,14 @@ async def processar_km_rodados(
                     km_mensal_list.append({
                         'NUM_FROTA': frota,
                         'MES_ANO': mes_ano,
-                        'Km Rodados Mês': km_rodados,
-                        'Registros': len(grupo_mes),
-                        'Primeira_Data': registros_ordenados['DTA_MOVIMENTO'].iloc[0],
-                        'Ultima_Data': registros_ordenados['DTA_MOVIMENTO'].iloc[-1]
+                        'Km Rodados Mês': km_rodados
                     })
                 else:
                     # Se só tem um registro no mês, não é possível calcular km rodado
                     km_mensal_list.append({
                         'NUM_FROTA': frota,
                         'MES_ANO': mes_ano,
-                        'Km Rodados Mês': 0,
-                        'Registros': len(grupo_mes),
-                        'Primeira_Data': grupo_mes['DTA_MOVIMENTO'].iloc[0] if len(grupo_mes) > 0 else None,
-                        'Ultima_Data': grupo_mes['DTA_MOVIMENTO'].iloc[-1] if len(grupo_mes) > 0 else None
+                        'Km Rodados Mês': 0
                     })
         
         # Criar DataFrame com os resultados
