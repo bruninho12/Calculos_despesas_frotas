@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import io
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
@@ -251,11 +252,31 @@ async def processar_km_rodados(
         km_df["KM_ATUAL"] = pd.to_numeric(km_df["KM_ATUAL"], errors="coerce")
 
         # CÁLCULO 1: Km Rodados por Mês (KM_MAX - KM_MIN)
-        # Primeiro, remover valores obviamente incorretos
+        # Função para detectar anomalias em uma série de KMs
+        def detectar_anomalias(kms, datas):
+            # Converter para array numpy para cálculos
+            kms = pd.to_numeric(kms, errors='coerce').values
+            datas = pd.to_datetime(datas).values
+            
+            # Calcular diferenças entre registros consecutivos
+            km_diffs = np.diff(kms)
+            dias_diffs = np.diff(datas).astype('timedelta64[D]').astype(int)
+            
+            # Calcular média diária para cada intervalo
+            km_por_dia = np.where(dias_diffs > 0, km_diffs / dias_diffs, 0)
+            
+            # Identificar valores atípicos (mais de 1000km por dia ou negativos)
+            anomalias = (km_por_dia > 1000) | (km_por_dia < 0)
+            return anomalias
+
+        # Primeiro, remover valores obviamente incorretos e criar cópia do DataFrame
         km_df = km_df[
             (km_df["KM_ATUAL"] > 0) &  # Remove zeros
             (km_df["KM_ATUAL"] < 9999999)  # Remove valores absurdos
         ].copy()
+        
+        # Converter DTA_MOVIMENTO para datetime se ainda não for
+        km_df["DTA_MOVIMENTO"] = pd.to_datetime(km_df["DTA_MOVIMENTO"])
         
         # Ordenar por frota, data e km para análise sequencial
         km_df = km_df.sort_values(['NUM_FROTA', 'DTA_MOVIMENTO', 'KM_ATUAL'])
@@ -268,31 +289,75 @@ async def processar_km_rodados(
             # Processar cada mês separadamente
             for mes_ano, grupo_mes in grupo_frota.groupby('MES_ANO'):
                 if len(grupo_mes) >= 2:  # Só calcula se tiver pelo menos 2 registros
-                    # Pegar o primeiro e último registro do mês ordenado por data e km
+                    # Ordenar registros por data
                     registros_ordenados = grupo_mes.sort_values(['DTA_MOVIMENTO', 'KM_ATUAL'])
-                    km_inicial = registros_ordenados.iloc[0]['KM_ATUAL']
-                    km_final = registros_ordenados.iloc[-1]['KM_ATUAL']
                     
-                    # Calcular a diferença
-                    km_rodados = km_final - km_inicial
+                    # Verificar se há anomalias na sequência de KMs
+                    anomalias = detectar_anomalias(
+                        registros_ordenados['KM_ATUAL'],
+                        registros_ordenados['DTA_MOVIMENTO']
+                    )
                     
-                    # Validar o resultado
-                    if km_rodados < 0:  # Se der negativo, pode ser virada de hodômetro ou erro
-                        km_rodados = 0
-                    if km_rodados > 50000:  # Se for muito alto, provavelmente é erro
-                        km_rodados = 0
+                    if not any(anomalias):  # Se não houver anomalias
+                        # Pegar o primeiro e último registro válido do mês
+                        km_inicial = registros_ordenados.iloc[0]['KM_ATUAL']
+                        km_final = registros_ordenados.iloc[-1]['KM_ATUAL']
                         
+                        # Calcular a diferença
+                        km_rodados = km_final - km_inicial
+                        
+                        # Validações adicionais
+                        dias_no_mes = (registros_ordenados['DTA_MOVIMENTO'].max() - 
+                                     registros_ordenados['DTA_MOVIMENTO'].min()).days
+                        
+                        media_diaria = km_rodados / max(dias_no_mes, 1)
+                        
+                        # Aplicar regras de validação
+                        km_valido = (
+                            km_rodados >= 0 and  # Não pode ser negativo
+                            km_rodados <= 15000 and  # Limite máximo mensal razoável
+                            media_diaria <= 500 and  # Média diária razoável
+                            dias_no_mes <= 31  # Não pode ter mais que um mês de diferença
+                        )
+                        
+                        if not km_valido:
+                            # Se não passar nas validações, registrar como 0
+                            km_rodados = 0
+                    else:
+                        # Se houver anomalias, tentar calcular usando registros válidos
+                        registros_validos = registros_ordenados[~np.append(anomalias, False)]
+                        if len(registros_validos) >= 2:
+                            km_inicial = registros_validos.iloc[0]['KM_ATUAL']
+                            km_final = registros_validos.iloc[-1]['KM_ATUAL']
+                            km_rodados = km_final - km_inicial
+                            
+                            # Aplicar as mesmas validações
+                            dias_no_mes = (registros_validos['DTA_MOVIMENTO'].max() - 
+                                         registros_validos['DTA_MOVIMENTO'].min()).days
+                            media_diaria = km_rodados / max(dias_no_mes, 1)
+                            
+                            if not (0 <= km_rodados <= 15000 and media_diaria <= 500):
+                                km_rodados = 0
+                        else:
+                            km_rodados = 0
+                    
                     km_mensal_list.append({
                         'NUM_FROTA': frota,
                         'MES_ANO': mes_ano,
-                        'Km Rodados Mês': km_rodados
+                        'Km Rodados Mês': km_rodados,
+                        'Registros': len(grupo_mes),
+                        'Primeira_Data': registros_ordenados['DTA_MOVIMENTO'].iloc[0],
+                        'Ultima_Data': registros_ordenados['DTA_MOVIMENTO'].iloc[-1]
                     })
                 else:
                     # Se só tem um registro no mês, não é possível calcular km rodado
                     km_mensal_list.append({
                         'NUM_FROTA': frota,
                         'MES_ANO': mes_ano,
-                        'Km Rodados Mês': 0
+                        'Km Rodados Mês': 0,
+                        'Registros': len(grupo_mes),
+                        'Primeira_Data': grupo_mes['DTA_MOVIMENTO'].iloc[0] if len(grupo_mes) > 0 else None,
+                        'Ultima_Data': grupo_mes['DTA_MOVIMENTO'].iloc[-1] if len(grupo_mes) > 0 else None
                     })
         
         # Criar DataFrame com os resultados
