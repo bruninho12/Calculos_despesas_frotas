@@ -261,11 +261,15 @@ async def processar_km_rodados(
         def calcula_km_rodado(row):
             if pd.isna(row["KM_MIN"]) or pd.isna(row["KM_MAX"]):
                 return "Dados insuficientes para cálculo"
-            if row["KM_MAX"] < row["KM_MIN"]:
-                return "Odômetro resetado ou dados inconsistentes"
-            return round(row["KM_MAX"] - row["KM_MIN"], 2)
+            try:
+                resultado = float(row["KM_MAX"]) - float(row["KM_MIN"])
+                return round(resultado, 3)
+            except Exception:
+                return "Dados insuficientes para cálculo"
 
         km_mensal["Km Rodados Mês"] = km_mensal.apply(calcula_km_rodado, axis=1)
+        # Organizar por NUM_FROTA e MES_ANO
+        km_mensal = km_mensal.sort_values(["NUM_FROTA", "MES_ANO"]).reset_index(drop=True)
         
         # CÁLCULO 2: Quantidade de Litros Consumidos
         # Filtrar apenas lançamentos de combustível
