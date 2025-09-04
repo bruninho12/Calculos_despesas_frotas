@@ -89,9 +89,14 @@ function ProcessarKM({ planilhaOrganizada }) {
       return;
     }
 
+    // Verifica se planilhaOrganizada é um objeto File válido
     if (!(planilhaOrganizada instanceof File)) {
       setErro(
         "Planilha organizada não é válida. Por favor, reinicie o processo."
+      );
+      console.error(
+        "planilhaOrganizada não é um objeto File:",
+        planilhaOrganizada
       );
       return;
     }
@@ -104,6 +109,13 @@ function ProcessarKM({ planilhaOrganizada }) {
     formData.append("planilha_km", planilhaKM);
     formData.append("planilha_organizada", planilhaOrganizada);
 
+    // Log para debug
+    console.log("Enviando para prévia - planilha_km:", planilhaKM.name);
+    console.log(
+      "Enviando para prévia - planilha_organizada:",
+      planilhaOrganizada.name
+    );
+
     try {
       const response = await fetch(`${API_BASE_URL}/previa-km/`, {
         method: "POST",
@@ -112,6 +124,7 @@ function ProcessarKM({ planilhaOrganizada }) {
 
       if (response.ok) {
         const data = await response.json();
+
         if (data.status === "success") {
           setPreviewData({
             ...previewData,
@@ -123,13 +136,34 @@ function ProcessarKM({ planilhaOrganizada }) {
           setErro(data.message || "Erro ao carregar prévia dos dados de KM.");
         }
       } else {
-        const errorText = await response.text();
-        setErro(
-          `Erro ${response.status}: ${response.statusText} - ${errorText}`
-        );
+        try {
+          // Tentar ler o erro como texto
+          const errorText = await response.text();
+          let errorMessage = `Erro ${response.status}: ${response.statusText}`;
+
+          try {
+            // Tentar interpretar o texto como JSON
+            const errorData = JSON.parse(errorText);
+            if (errorData.detail) {
+              errorMessage = errorData.detail;
+            } else if (errorData.message) {
+              errorMessage = errorData.message;
+            }
+          } catch (jsonError) {
+            // Se não for JSON válido, usar o texto como está
+            if (errorText) {
+              errorMessage = errorText;
+            }
+          }
+
+          setErro(errorMessage);
+        } catch (parseErr) {
+          setErro(`Erro ${response.status}: ${response.statusText}`);
+        }
       }
     } catch (err) {
       setErro(`Erro ao conectar com o servidor: ${err.message}`);
+      console.error("Erro na requisição de prévia:", err);
     } finally {
       setCarregando(false);
     }
@@ -141,9 +175,14 @@ function ProcessarKM({ planilhaOrganizada }) {
       return;
     }
 
+    // Verifica se planilhaOrganizada é um objeto File válido
     if (!(planilhaOrganizada instanceof File)) {
       setErro(
         "Planilha organizada não é válida. Por favor, reinicie o processo."
+      );
+      console.error(
+        "planilhaOrganizada não é um objeto File:",
+        planilhaOrganizada
       );
       return;
     }
@@ -156,14 +195,21 @@ function ProcessarKM({ planilhaOrganizada }) {
     formData.append("planilha_km", planilhaKM);
     formData.append("planilha_organizada", planilhaOrganizada);
 
+    // Log para debug
+    console.log("Enviando planilha_km:", planilhaKM.name);
+    console.log("Enviando planilha_organizada:", planilhaOrganizada.name);
+
     try {
+      // Sempre pular validação de colunas, pois estamos calculando os valores dinamicamente
       const url = `${API_BASE_URL}/processar-km/?skip_validation=true`;
+
       const response = await fetch(url, {
         method: "POST",
         body: formData,
       });
 
       if (response.ok) {
+        // Para arquivos Excel, tratamos como blob para download
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const filename =
@@ -172,6 +218,7 @@ function ProcessarKM({ planilhaOrganizada }) {
             ?.split("filename=")[1]
             ?.replace(/"/g, "") || "planilha_completa.xlsx";
 
+        // Iniciar download automático
         const a = document.createElement("a");
         a.href = url;
         a.download = filename;
@@ -188,57 +235,131 @@ function ProcessarKM({ planilhaOrganizada }) {
           registros_processados: "Processamento concluído",
         });
       } else {
-        const errorText = await response.text();
-        setErro(
-          `Erro ${response.status}: ${response.statusText} - ${errorText}`
-        );
+        try {
+          // Tentar ler o erro como texto
+          const errorText = await response.text();
+          let errorMessage = `Erro ${response.status}: ${response.statusText}`;
+
+          try {
+            // Tentar interpretar o texto como JSON
+            const errorData = JSON.parse(errorText);
+            if (errorData.detail) {
+              errorMessage = errorData.detail;
+            }
+          } catch (jsonError) {
+            // Se não for JSON válido, usar o texto como está
+            if (errorText) {
+              errorMessage = errorText;
+            }
+          }
+
+          setErro(errorMessage);
+        } catch (parseErr) {
+          setErro(`Erro ${response.status}: ${response.statusText}`);
+        }
       }
     } catch (err) {
       setErro(`Erro ao conectar com o servidor: ${err.message}`);
+      console.error("Erro na requisição:", err);
     } finally {
       setCarregando(false);
+      window.URL.revokeObjectURL(resultado?.download_url);
     }
   };
 
-  return (
-    <Box sx={{ maxWidth: 1200, margin: "0 auto", padding: 3 }}>
-      <Paper
-        elevation={3}
-        sx={{
-          bgcolor: "#2a79b9",
-          color: "white",
-          p: 3,
-          mb: 3,
-          borderRadius: 2,
-        }}
-      >
-        <Typography
-          variant="h4"
-          component="h1"
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 2,
+  // Componente para exibir a tabela de prévia
+  function PreviewTable({ data, title }) {
+    if (!data || !data.primeiras_linhas || data.primeiras_linhas.length === 0) {
+      return null;
+    }
+
+    return (
+      <div style={{ marginTop: "20px", overflowX: "auto" }}>
+        <h4 style={{ fontSize: "16px", color: "#333", marginBottom: "8px" }}>
+          {title}
+        </h4>
+        <table
+          style={{
+            width: "100%",
+            borderCollapse: "collapse",
+            fontSize: "14px",
           }}
         >
-          <Box
-            component="img"
-            src="/truck-icon.png"
-            alt=""
-            sx={{ width: 40, height: 40 }}
-          />
-          Processar Planilha KM Rodados
-        </Typography>
-        <Typography variant="subtitle1" sx={{ mt: 1, opacity: 0.9 }}>
-          Processamento e Análise de Dados de Frotas
-        </Typography>
-      </Paper>
+          <thead>
+            <tr>
+              {data.colunas.map((coluna, index) => (
+                <th
+                  key={index}
+                  style={{
+                    padding: "8px",
+                    backgroundColor: "#f2f2f2",
+                    border: "1px solid #ddd",
+                    fontWeight: "600",
+                    textAlign: "left",
+                  }}
+                >
+                  {coluna}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {data.primeiras_linhas.map((linha, rowIndex) => (
+              <tr key={rowIndex}>
+                {data.colunas.map((coluna, colIndex) => (
+                  <td
+                    key={colIndex}
+                    style={{
+                      padding: "8px",
+                      border: "1px solid #ddd",
+                      textAlign:
+                        typeof linha[coluna] === "number" ? "right" : "left",
+                    }}
+                  >
+                    {linha[coluna] !== null && linha[coluna] !== undefined
+                      ? String(linha[coluna])
+                      : ""}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div style={{ marginTop: "10px", fontSize: "14px", color: "#666" }}>
+          <p>
+            Total de linhas: {data.num_linhas} | Mostrando as primeiras{" "}
+            {data.primeiras_linhas.length} linhas
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <Box sx={{ maxWidth: 1200, margin: "0 auto", padding: 3 }}>
+      <Typography variant="h4" component="h1" gutterBottom color="primary" sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: 2,
+        backgroundColor: '#2a79b9',
+        color: 'white',
+        padding: '20px',
+        borderRadius: '8px',
+        marginBottom: '24px'
+      }}>
+        <Box component="img" src="/truck-icon.png" alt="" sx={{ width: 40, height: 40 }} />
+        Processar Planilha KM Rodados
+      </Typography>
+      <Typography variant="body1" paragraph>
+        Faça upload da planilha com os dados de KM rodados e consumo para
+        complementar a análise da planilha organizada.
+      </Typography>
 
       {(erro || mensagem) && (
-        <Alert
-          severity={erro ? "error" : "success"}
+        <Alert 
+          severity={erro ? "error" : "success"} 
           sx={{ mb: 3 }}
-          onClose={() => (erro ? setErro("") : setMensagem(""))}
+          onClose={() => erro ? setErro("") : setMensagem("")}
         >
           {erro || mensagem}
           {erro?.includes("Colunas") && (
@@ -256,7 +377,7 @@ function ProcessarKM({ planilhaOrganizada }) {
                   <ListItemIcon>
                     <InfoIcon color="primary" fontSize="small" />
                   </ListItemIcon>
-                  <ListItemText
+                  <ListItemText 
                     primary="NUM_FROTA"
                     secondary="Identificador da frota"
                   />
@@ -265,7 +386,7 @@ function ProcessarKM({ planilhaOrganizada }) {
                   <ListItemIcon>
                     <InfoIcon color="primary" fontSize="small" />
                   </ListItemIcon>
-                  <ListItemText
+                  <ListItemText 
                     primary="KM_ATUAL"
                     secondary="Quilometragem atual no momento do registro"
                   />
@@ -274,7 +395,7 @@ function ProcessarKM({ planilhaOrganizada }) {
                   <ListItemIcon>
                     <InfoIcon color="primary" fontSize="small" />
                   </ListItemIcon>
-                  <ListItemText
+                  <ListItemText 
                     primary="DTA_MOVIMENTO"
                     secondary="Data do registro"
                   />
@@ -283,7 +404,7 @@ function ProcessarKM({ planilhaOrganizada }) {
                   <ListItemIcon>
                     <InfoIcon color="info" fontSize="small" />
                   </ListItemIcon>
-                  <ListItemText
+                  <ListItemText 
                     primary="QTDE_ITEM (opcional)"
                     secondary="Para calcular litros consumidos"
                   />
@@ -292,7 +413,7 @@ function ProcessarKM({ planilhaOrganizada }) {
                   <ListItemIcon>
                     <InfoIcon color="info" fontSize="small" />
                   </ListItemIcon>
-                  <ListItemText
+                  <ListItemText 
                     primary="DSC_TIPO_DESPESAS (opcional)"
                     secondary="Para identificar abastecimentos"
                   />
@@ -321,7 +442,7 @@ function ProcessarKM({ planilhaOrganizada }) {
                 component="span"
                 startIcon={<UploadFileIcon />}
               >
-                {planilhaKMNome || "Selecionar arquivo da planilha de KM"}
+                {planilhaKMNome || 'Selecionar arquivo da planilha de KM'}
               </UploadButton>
             </label>
             {planilhaKMNome && (
@@ -341,7 +462,7 @@ function ProcessarKM({ planilhaOrganizada }) {
                 <ListItemIcon>
                   <ArrowForwardIcon color="primary" fontSize="small" />
                 </ListItemIcon>
-                <ListItemText
+                <ListItemText 
                   primary="Km Rodados Mês"
                   secondary="Diferença entre KM máximo e mínimo por frota/mês"
                 />
@@ -350,7 +471,7 @@ function ProcessarKM({ planilhaOrganizada }) {
                 <ListItemIcon>
                   <ArrowForwardIcon color="primary" fontSize="small" />
                 </ListItemIcon>
-                <ListItemText
+                <ListItemText 
                   primary="Qtd Litros Consumidos"
                   secondary="Soma dos abastecimentos por frota/mês"
                 />
@@ -359,7 +480,7 @@ function ProcessarKM({ planilhaOrganizada }) {
                 <ListItemIcon>
                   <ArrowForwardIcon color="primary" fontSize="small" />
                 </ListItemIcon>
-                <ListItemText
+                <ListItemText 
                   primary="Custo / Km Rodado"
                   secondary="Total Despesas dividido pelos KM rodados"
                 />
@@ -368,7 +489,7 @@ function ProcessarKM({ planilhaOrganizada }) {
                 <ListItemIcon>
                   <ArrowForwardIcon color="primary" fontSize="small" />
                 </ListItemIcon>
-                <ListItemText
+                <ListItemText 
                   primary="Média Consumo"
                   secondary="KM rodados dividido pela quantidade de litros"
                 />
@@ -377,10 +498,7 @@ function ProcessarKM({ planilhaOrganizada }) {
           </Box>
 
           <Box sx={{ mt: 3, bgcolor: "#f5f5f5", p: 2, borderRadius: 1 }}>
-            <Typography
-              variant="subtitle2"
-              sx={{ display: "flex", alignItems: "center", gap: 1 }}
-            >
+            <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <InfoIcon fontSize="small" color="info" />
               Planilha organizada já selecionada:{" "}
               {planilhaOrganizada && planilhaOrganizada instanceof File
@@ -390,185 +508,132 @@ function ProcessarKM({ planilhaOrganizada }) {
                 : "Nenhuma"}
             </Typography>
           </Box>
-
-          <Box sx={{ display: "flex", gap: 2, mt: 3 }}>
-            <Button
-              variant="outlined"
-              onClick={carregarPrevia}
-              disabled={carregando || !planilhaKM || !planilhaOrganizada}
-              startIcon={<VisibilityIcon />}
-              sx={{ flex: 1 }}
-            >
-              Visualizar Prévia
-            </Button>
-            <Button
-              variant="contained"
-              onClick={processarDados}
-              disabled={carregando || !planilhaKM || !planilhaOrganizada}
-              startIcon={
-                carregando ? (
-                  <CircularProgress size={20} />
-                ) : (
-                  <CloudUploadIcon />
-                )
-              }
-              sx={{ flex: 1 }}
-            >
-              {carregando ? "Processando..." : "Processar Planilhas"}
-            </Button>
-          </Box>
-        </UploadBox>
-      </Paper>
-
-      {previewData.mostrarPrevia && (
-        <Paper elevation={2} sx={{ mt: 3, p: 3 }}>
-          <Typography variant="h6" gutterBottom color="primary">
-            Prévia dos Dados
-          </Typography>
-
-          {previewData.km &&
-            typeof previewData.km === "object" &&
-            previewData.km.primeiras_linhas && (
-              <Box sx={{ mb: 4 }}>
-                <Typography variant="subtitle1" gutterBottom>
-                  Planilha de KM Rodados
-                </Typography>
-                <TableContainer>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        {previewData.km.colunas.map((coluna, index) => (
-                          <TableCell key={index} sx={{ fontWeight: "bold" }}>
-                            {coluna}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {previewData.km.primeiras_linhas.map(
-                        (linha, rowIndex) => (
-                          <TableRow key={rowIndex}>
-                            {previewData.km.colunas.map((coluna, colIndex) => (
-                              <TableCell
-                                key={colIndex}
-                                align={
-                                  typeof linha[coluna] === "number"
-                                    ? "right"
-                                    : "left"
-                                }
-                              >
-                                {linha[coluna] !== null &&
-                                linha[coluna] !== undefined
-                                  ? String(linha[coluna])
-                                  : ""}
-                              </TableCell>
-                            ))}
-                          </TableRow>
-                        )
-                      )}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ mt: 1, display: "block" }}
-                >
-                  Total de linhas: {previewData.km.num_linhas} | Mostrando as
-                  primeiras {previewData.km.primeiras_linhas.length} linhas
-                </Typography>
-              </Box>
-            )}
-
-          {previewData.organizada &&
-            typeof previewData.organizada === "object" &&
-            previewData.organizada.primeiras_linhas && (
-              <Box>
-                <Typography variant="subtitle1" gutterBottom>
-                  Planilha Organizada
-                </Typography>
-                <TableContainer>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        {previewData.organizada.colunas.map((coluna, index) => (
-                          <TableCell key={index} sx={{ fontWeight: "bold" }}>
-                            {coluna}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {previewData.organizada.primeiras_linhas.map(
-                        (linha, rowIndex) => (
-                          <TableRow key={rowIndex}>
-                            {previewData.organizada.colunas.map(
-                              (coluna, colIndex) => (
-                                <TableCell
-                                  key={colIndex}
-                                  align={
-                                    typeof linha[coluna] === "number"
-                                      ? "right"
-                                      : "left"
-                                  }
-                                >
-                                  {linha[coluna] !== null &&
-                                  linha[coluna] !== undefined
-                                    ? String(linha[coluna])
-                                    : ""}
-                                </TableCell>
-                              )
-                            )}
-                          </TableRow>
-                        )
-                      )}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ mt: 1, display: "block" }}
-                >
-                  Total de linhas: {previewData.organizada.num_linhas} |
-                  Mostrando as primeiras{" "}
-                  {previewData.organizada.primeiras_linhas.length} linhas
-                </Typography>
-              </Box>
-            )}
-        </Paper>
-      )}
-
-      {resultado && (
-        <Paper elevation={2} sx={{ mt: 3, p: 3 }}>
-          <Typography variant="h6" gutterBottom color="primary">
-            Processamento Concluído
-          </Typography>
-          <Typography variant="body1" paragraph>
-            O arquivo com os dados processados está pronto para download.
-          </Typography>
-          <Button
-            href={resultado.download_url}
-            download
-            variant="contained"
-            color="primary"
-            startIcon={<CloudUploadIcon />}
-            sx={{ mb: 2 }}
+          </div>
+        </div>
+        <div className="buttons-container">
+          <button
+            type="button"
+            onClick={carregarPrevia}
+            disabled={carregando || !planilhaKM || !planilhaOrganizada}
+            className="preview-button"
           >
+            Visualizar Prévia
+          </button>
+          <button
+            type="button"
+            onClick={processarDados}
+            disabled={carregando || !planilhaKM || !planilhaOrganizada}
+            className="process-button"
+          >
+            Processar Planilhas
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              if (!planilhaKM || !planilhaOrganizada) {
+                setErro("Selecione ambas as planilhas para testar o upload.");
+                return;
+              }
+              setCarregando(true);
+              setErro("");
+              setMensagem("Testando upload de arquivos...");
+
+              const formData = new FormData();
+              formData.append("planilha_km", planilhaKM);
+              formData.append("planilha_organizada", planilhaOrganizada);
+
+              try {
+                const response = await fetch(`${API_BASE_URL}/teste-upload/`, {
+                  method: "POST",
+                  body: formData,
+                });
+
+                if (response.ok) {
+                  const data = await response.json();
+                  setMensagem(
+                    `Teste de upload bem-sucedido! Arquivos recebidos: ${
+                      data.arquivos_recebidos.planilha_km.filename
+                    } (${Math.round(
+                      data.arquivos_recebidos.planilha_km.size / 1024
+                    )}KB) e ${
+                      data.arquivos_recebidos.planilha_organizada.filename
+                    } (${Math.round(
+                      data.arquivos_recebidos.planilha_organizada.size / 1024
+                    )}KB)`
+                  );
+                } else {
+                  const errorText = await response.text();
+                  setErro(
+                    `Erro no teste: ${response.status} ${response.statusText} - ${errorText}`
+                  );
+                }
+              } catch (err) {
+                setErro(`Erro no teste: ${err.message}`);
+              } finally {
+                setCarregando(false);
+              }
+            }}
+            disabled={carregando || !planilhaKM || !planilhaOrganizada}
+            className="test-button"
+            style={{ marginLeft: "10px", backgroundColor: "#6c757d" }}
+          >
+            Testar Upload
+          </button>
+        </div>
+        {carregando && (
+          <div className="loading-container">
+            <div className="loading-spinner"></div>
+            <div className="loading-text">Processando...</div>
+          </div>
+        )}
+        {/* Área de visualização da prévia */}
+        {previewData.mostrarPrevia && (
+          <div className="preview-container">
+            <h3>Prévia dos Dados</h3>
+
+            {/* Prévia da planilha de KM */}
+            {previewData.km &&
+              typeof previewData.km === "object" &&
+              previewData.km.primeiras_linhas && (
+                <PreviewTable
+                  data={previewData.km}
+                  title="Planilha de KM Rodados"
+                />
+              )}
+
+            {/* Prévia da planilha organizada */}
+            {previewData.organizada &&
+              typeof previewData.organizada === "object" &&
+              previewData.organizada.primeiras_linhas && (
+                <PreviewTable
+                  data={previewData.organizada}
+                  title="Planilha Organizada"
+                />
+              )}
+          </div>
+        )}
+      </form>
+
+      {/* Resultado do processamento */}
+      {resultado && (
+        <div className="result-container">
+          <h3>Processamento Concluído</h3>
+          <p>O arquivo com os dados processados está pronto para download.</p>
+          <a href={resultado.download_url} download className="download-button">
             Baixar Planilha Final
-          </Button>
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="body2">
+          </a>
+          <div className="result-info">
+            <p>
               <strong>Nome do arquivo:</strong> {resultado.filename}
-            </Typography>
-            <Typography variant="body2">
+            </p>
+            <p>
               <strong>Registros processados:</strong>{" "}
               {resultado.registros_processados}
-            </Typography>
-          </Box>
-        </Paper>
+            </p>
+          </div>
+        </div>
       )}
-    </Box>
+    </div>
   );
 }
 
