@@ -247,6 +247,7 @@ async def processar_km_rodados(
         km_df["NUM_FROTA"] = km_df["NUM_FROTA"].astype(str)
         organizada_df["NUM_FROTA"] = organizada_df["NUM_FROTA"].astype(str)
         
+<<<<<<< HEAD
         # CÁLCULO 1: Km Rodados por Mês (KM_MAX - KM_MIN)
         # Agrupar por Frota e Mês, calcular KM_MIN e KM_MAX
         km_mensal = km_df.groupby(["NUM_FROTA", "MES_ANO"])["KM_ATUAL"].agg([
@@ -262,6 +263,36 @@ async def processar_km_rodados(
             return row["KM_MAX"] - row["KM_MIN"]
 
         km_mensal["Km Rodados Mês"] = km_mensal.apply(calcula_km_rodado, axis=1)
+=======
+        # Garantir que KM_ATUAL seja numérico
+km_df["KM_ATUAL"] = pd.to_numeric(km_df["KM_ATUAL"], errors="coerce")
+
+# Garantir que MES_ANO seja datetime
+km_df["MES_ANO"] = pd.to_datetime(km_df["MES_ANO"], errors="coerce")
+
+# Função para calcular o KM rodado de forma robusta
+def calcular_km_rodado(grupo: pd.DataFrame):
+    grupo = grupo.sort_values("MES_ANO")
+    km_min = grupo["KM_ATUAL"].iloc[0]
+    km_max = grupo["KM_ATUAL"].iloc[-1]
+
+    if pd.isna(km_min) or pd.isna(km_max):
+        return "Dados insuficientes"
+    if km_max < km_min:
+        return "Odômetro resetado ou dados inconsistentes"
+    return round(km_max - km_min, 2)
+
+# Agrupar por Frota e Mês (usando Period para evitar mistura de datas)
+km_mensal = (
+    km_df.groupby(["NUM_FROTA", km_df["MES_ANO"].dt.to_period("M")])
+         .apply(calcular_km_rodado)
+         .reset_index()
+)
+
+km_mensal.columns = ["NUM_FROTA", "MES_ANO", "Km Rodados Mês"]
+
+
+>>>>>>> 48864345587c7d8b84a0606165cc8181702a686f
         
         # CÁLCULO 2: Quantidade de Litros Consumidos
         # Filtrar apenas lançamentos de combustível
