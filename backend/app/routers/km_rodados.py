@@ -251,16 +251,52 @@ async def processar_km_rodados(
         km_df["KM_ATUAL"] = pd.to_numeric(km_df["KM_ATUAL"], errors="coerce")
 
         # CÁLCULO 1: Km Rodados por Mês (KM_MAX - KM_MIN)
-        # Agrupar por Frota e Mês, calcular KM_MIN e KM_MAX
-        km_mensal = (
-            km_df[km_df["KM_ATUAL"] > 0]  # Ignorar valores zerados
-            .groupby(["NUM_FROTA", "MES_ANO"])
-            .agg({
-                "KM_ATUAL": lambda x: pd.Series([max(x), min(x)]).diff().iloc[-1]  # Calcula max - min diretamente
-            })
-            .reset_index()
-        )
-        km_mensal.columns = ["NUM_FROTA", "MES_ANO", "Km Rodados Mês"]
+        # Primeiro, remover valores obviamente incorretos
+        km_df = km_df[
+            (km_df["KM_ATUAL"] > 0) &  # Remove zeros
+            (km_df["KM_ATUAL"] < 9999999)  # Remove valores absurdos
+        ].copy()
+        
+        # Ordenar por frota, data e km para análise sequencial
+        km_df = km_df.sort_values(['NUM_FROTA', 'DTA_MOVIMENTO', 'KM_ATUAL'])
+        
+        # Preparar DataFrame para cálculo mensal
+        km_mensal_list = []
+        
+        # Processar cada frota separadamente
+        for frota, grupo_frota in km_df.groupby('NUM_FROTA'):
+            # Processar cada mês separadamente
+            for mes_ano, grupo_mes in grupo_frota.groupby('MES_ANO'):
+                if len(grupo_mes) >= 2:  # Só calcula se tiver pelo menos 2 registros
+                    # Pegar o primeiro e último registro do mês ordenado por data e km
+                    registros_ordenados = grupo_mes.sort_values(['DTA_MOVIMENTO', 'KM_ATUAL'])
+                    km_inicial = registros_ordenados.iloc[0]['KM_ATUAL']
+                    km_final = registros_ordenados.iloc[-1]['KM_ATUAL']
+                    
+                    # Calcular a diferença
+                    km_rodados = km_final - km_inicial
+                    
+                    # Validar o resultado
+                    if km_rodados < 0:  # Se der negativo, pode ser virada de hodômetro ou erro
+                        km_rodados = 0
+                    if km_rodados > 50000:  # Se for muito alto, provavelmente é erro
+                        km_rodados = 0
+                        
+                    km_mensal_list.append({
+                        'NUM_FROTA': frota,
+                        'MES_ANO': mes_ano,
+                        'Km Rodados Mês': km_rodados
+                    })
+                else:
+                    # Se só tem um registro no mês, não é possível calcular km rodado
+                    km_mensal_list.append({
+                        'NUM_FROTA': frota,
+                        'MES_ANO': mes_ano,
+                        'Km Rodados Mês': 0
+                    })
+        
+        # Criar DataFrame com os resultados
+        km_mensal = pd.DataFrame(km_mensal_list)
         # Organizar por NUM_FROTA e MES_ANO
         km_mensal = km_mensal.sort_values(["NUM_FROTA", "MES_ANO"]).reset_index(drop=True)
         
