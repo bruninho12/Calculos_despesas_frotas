@@ -79,7 +79,7 @@ if 'Viagens e Estadias' in todas_colunas:
     # Reordena a tabela
     tabela = tabela[todas_colunas]
 
-# Salva a planilha organizada
+# Salva a planilha organizada com estilização
 with pd.ExcelWriter(caminho_saida, engine='openpyxl') as writer:
     tabela.to_excel(writer, index=False)
     
@@ -87,12 +87,69 @@ with pd.ExcelWriter(caminho_saida, engine='openpyxl') as writer:
     workbook = writer.book
     worksheet = writer.sheets['Sheet1']
     
-    # Encontra a coluna do Total Despesas
-    col_idx = None
-    for i, col_name in enumerate(tabela.columns):
-        if col_name == 'Total Despesas':
-            col_idx = i + 1  # +1 porque as colunas no Excel começam do 1
-            break
+    # Configurações de estilo
+    from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
+    
+    # Estilos para cabeçalho
+    header_font = Font(bold=True, size=11, color="000000")
+    header_fill = PatternFill(start_color="E0E0E0", end_color="E0E0E0", fill_type="solid")
+    thin_border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+    
+    # Aplicar estilo no cabeçalho
+    for cell in worksheet[1]:
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.border = thin_border
+        cell.alignment = Alignment(horizontal='center', vertical='center')
+    
+    # Formatar todas as células com borda
+    for row in worksheet.iter_rows(min_row=2, max_row=worksheet.max_row):
+        for cell in row:
+            cell.border = thin_border
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+
+    # Ajustar largura das colunas
+    for column in worksheet.columns:
+        max_length = 0
+        column = list(column)
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = (max_length + 2)
+        worksheet.column_dimensions[column[0].column_letter].width = adjusted_width
+
+    # Aplicar formatação específica para cada tipo de coluna
+    for idx, col_name in enumerate(tabela.columns, 1):
+        col_letter = worksheet.cell(row=1, column=idx).column_letter
+        
+        # Colunas monetárias
+        if any(word in col_name for word in ['Despesas', 'Combustível', 'Pedágios', 'Viagens']):
+            for row in range(2, worksheet.max_row + 1):
+                cell = worksheet[f"{col_letter}{row}"]
+                cell.number_format = 'R$ #,##0.00'
+        
+        # Colunas de quilometragem
+        elif 'KM' in col_name:
+            for row in range(2, worksheet.max_row + 1):
+                cell = worksheet[f"{col_letter}{row}"]
+                cell.number_format = '#,##0'
+                
+        # Colunas de data
+        elif 'Mês' in col_name:
+            for row in range(2, worksheet.max_row + 1):
+                cell = worksheet[f"{col_letter}{row}"]
+                cell.alignment = Alignment(horizontal='center')
+    
+    # Adicionar filtros no cabeçalho
+    worksheet.auto_filter.ref = worksheet.dimensions
     
     if col_idx:
         # Formata a coluna de Total Despesas com estilo monetário
