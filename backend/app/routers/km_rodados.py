@@ -259,6 +259,15 @@ async def processar_km_rodados(
             km_min = km_validos.min()
             km_max = km_validos.max()
             resultado = km_max - km_min
+            # Dupla verificação:
+            # 1. Limite máximo plausível
+            LIMITE_MAX_KM = 10000
+            if resultado > LIMITE_MAX_KM:
+                return "Valor inconsistente para cálculo"
+            # 2. Checagem de sequência: se houver valor intermediário menor que o inicial
+            km_ordenados = km_validos.sort_index()
+            if (km_ordenados < km_ordenados.iloc[0]).any():
+                return "Valor inconsistente para cálculo"
             return round(resultado, 3)
 
         km_mensal = (
