@@ -236,6 +236,34 @@ function App() {
   return (
     <PageContainer>
       <Header />
+      <Box
+        sx={{
+          backgroundColor: "#2a79b9",
+          padding: "20px",
+          color: "white",
+          display: "flex",
+          alignItems: "center",
+          gap: 2,
+          mb: 3,
+        }}
+      >
+        <Typography
+          variant="h4"
+          component="h1"
+          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+        >
+          <Box
+            component="img"
+            src="/truck-icon.png"
+            alt=""
+            sx={{ width: 40, height: 40 }}
+          />
+          Sistema de Gestão de Frotas
+        </Typography>
+        <Typography variant="subtitle1" sx={{ opacity: 0.9 }}>
+          Processamento e Análise de Dados de Frotas
+        </Typography>
+      </Box>
       {telaAtual === "processar-km" ? (
         <ContentContainer>
           <Button
@@ -253,23 +281,43 @@ function App() {
           <form onSubmit={handleSubmit}>
             <Grid container spacing={3}>
               <Grid item xs={12}>
-                <UploadForm
-                  onCustosSelect={(file) => handleSelectFile(file, "custos")}
-                  onFrotasSelect={(file) => handleSelectFile(file, "frotas")}
-                  custosFileName={previewData.custoNome}
-                  frotasFileName={previewData.frotasNome}
-                />
-              </Grid>
+                <StyledPaper
+                  sx={{
+                    backgroundColor: "white",
+                    borderRadius: "8px",
+                    padding: "24px",
+                  }}
+                >
+                  <UploadForm
+                    onCustosSelect={(file) => handleSelectFile(file, "custos")}
+                    onFrotasSelect={(file) => handleSelectFile(file, "frotas")}
+                    custosFileName={previewData.custoNome}
+                    frotasFileName={previewData.frotasNome}
+                  />
 
-              <Grid item xs={12}>
-                <StyledPaper>
-                  <Box sx={{ display: "flex", gap: 2 }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      gap: 2,
+                      mt: 3,
+                      "& .MuiButton-root": {
+                        py: 1.5,
+                        px: 4,
+                        borderRadius: "4px",
+                      },
+                    }}
+                  >
                     <Button
-                      variant="contained"
-                      color="secondary"
+                      variant="outlined"
+                      color="primary"
                       disabled={carregando || !planilhaCustos || !relacaoFrotas}
                       onClick={carregarPrevia}
-                      startIcon={<CloudUploadIcon />}
+                      sx={{
+                        backgroundColor: "#f5f5f5",
+                        "&:hover": {
+                          backgroundColor: "#e0e0e0",
+                        },
+                      }}
                       fullWidth
                     >
                       Visualizar Prévia
@@ -278,6 +326,12 @@ function App() {
                       type="submit"
                       variant="contained"
                       disabled={carregando}
+                      sx={{
+                        backgroundColor: "#2196f3",
+                        "&:hover": {
+                          backgroundColor: "#1976d2",
+                        },
+                      }}
                       fullWidth
                     >
                       {carregando ? "Processando..." : "Processar Planilhas"}

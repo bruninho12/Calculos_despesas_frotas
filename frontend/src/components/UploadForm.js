@@ -1,140 +1,119 @@
 import React from "react";
-import styled from "styled-components";
+import { Box, Typography, Button, Paper } from "@mui/material";
+import { styled } from "@mui/material/styles";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 
-const FormContainer = styled.form`
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  padding: 2rem;
-  max-width: 800px;
-  margin: 0 auto;
-`;
+const UploadBox = styled(Box)(({ theme }) => ({
+  display: "flex",
+  flexDirection: "column",
+  gap: theme.spacing(3),
+  padding: theme.spacing(3),
+}));
 
-const InputGroup = styled.div`
-  margin-bottom: 1.5rem;
-`;
+const InputGroup = styled(Box)(({ theme }) => ({
+  display: "flex",
+  flexDirection: "column",
+  gap: theme.spacing(1),
+}));
 
-const Label = styled.label`
-  display: block;
-  color: #2c3e50;
-  font-size: 1.2rem;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-`;
+const FileInput = styled("input")({
+  display: "none",
+});
 
-const FileInput = styled.input`
-  width: 100%;
-  padding: 1rem;
-  border: 2px dashed #3498db;
-  border-radius: 8px;
-  background: #f8fafc;
-  cursor: pointer;
-  transition: all 0.3s ease;
+const UploadButton = styled(Button)(({ theme }) => ({
+  width: "100%",
+  padding: theme.spacing(2),
+  borderStyle: "dashed",
+  borderWidth: 2,
+  textTransform: "none",
+}));
 
-  &:hover {
-    border-color: #2c3e50;
-    background: white;
-  }
-
-  &:focus {
-    outline: none;
-    border-color: #2980b9;
-    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
-  }
-`;
-
-const ButtonGroup = styled.div`
-  display: flex;
-  gap: 1rem;
-  margin-top: 2rem;
-
-  @media (max-width: 600px) {
-    flex-direction: column;
-  }
-`;
-
-const Button = styled.button`
-  flex: 1;
-  padding: 1rem;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-
-  ${(props) =>
-    props.primary
-      ? `
-    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-    color: white;
-
-    &:hover {
-      background: linear-gradient(135deg, #2980b9 0%, #2472a4 100%);
-    }
-  `
-      : `
-    background: linear-gradient(135deg, #27ae60 0%, #219a52 100%);
-    color: white;
-
-    &:hover {
-      background: linear-gradient(135deg, #219a52 0%, #1e8449 100%);
-    }
-  `}
-
-  &:disabled {
-    background: #95a5a6;
-    cursor: not-allowed;
-  }
-`;
+const FileInfo = styled(Box)(({ theme }) => ({
+  display: "flex",
+  alignItems: "center",
+  gap: theme.spacing(1),
+  padding: theme.spacing(1),
+  backgroundColor: theme.palette.grey[50],
+  borderRadius: theme.shape.borderRadius,
+}));
 
 const UploadForm = ({
-  onSubmit,
-  onPreview,
-  loading,
-  planilhaCustos,
-  relacaoFrotas,
-  onFileSelect,
+  onCustosSelect,
+  onFrotasSelect,
+  custosFileName,
+  frotasFileName,
 }) => {
+  const handleCustosChange = (event) => {
+    if (event.target.files && event.target.files[0]) {
+      onCustosSelect(event.target.files[0]);
+    }
+  };
+
+  const handleFrotasChange = (event) => {
+    if (event.target.files && event.target.files[0]) {
+      onFrotasSelect(event.target.files[0]);
+    }
+  };
+
   return (
-    <FormContainer onSubmit={onSubmit}>
-      <InputGroup>
-        <Label>Planilha de Custos</Label>
-        <FileInput
-          type="file"
-          accept=".xlsx,.xls"
-          onChange={(e) => onFileSelect(e, "custos")}
-          required
-        />
-      </InputGroup>
+    <Paper elevation={2}>
+      <UploadBox>
+        <InputGroup>
+          <Typography variant="h6" color="primary">
+            Planilha de Custos
+          </Typography>
+          <label htmlFor="custos-upload">
+            <FileInput
+              id="custos-upload"
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={handleCustosChange}
+            />
+            <UploadButton
+              variant="outlined"
+              component="span"
+              startIcon={<CloudUploadIcon />}
+            >
+              {custosFileName || "Selecione a planilha de custos"}
+            </UploadButton>
+          </label>
+          {custosFileName && (
+            <FileInfo>
+              <VisibilityIcon color="primary" fontSize="small" />
+              <Typography variant="body2">{custosFileName}</Typography>
+            </FileInfo>
+          )}
+        </InputGroup>
 
-      <InputGroup>
-        <Label>Relação de Frotas</Label>
-        <FileInput
-          type="file"
-          accept=".xlsx,.xls"
-          onChange={(e) => onFileSelect(e, "frotas")}
-          required
-        />
-      </InputGroup>
-
-      <ButtonGroup>
-        <Button
-          type="button"
-          onClick={onPreview}
-          disabled={loading || !planilhaCustos || !relacaoFrotas}
-        >
-          Visualizar Prévia
-        </Button>
-        <Button type="submit" primary disabled={loading}>
-          {loading ? "Processando..." : "Processar Planilhas"}
-        </Button>
-      </ButtonGroup>
-    </FormContainer>
+        <InputGroup>
+          <Typography variant="h6" color="primary">
+            Relação de Frotas
+          </Typography>
+          <label htmlFor="frotas-upload">
+            <FileInput
+              id="frotas-upload"
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={handleFrotasChange}
+            />
+            <UploadButton
+              variant="outlined"
+              component="span"
+              startIcon={<CloudUploadIcon />}
+            >
+              {frotasFileName || "Selecione a relação de frotas"}
+            </UploadButton>
+          </label>
+          {frotasFileName && (
+            <FileInfo>
+              <VisibilityIcon color="primary" fontSize="small" />
+              <Typography variant="body2">{frotasFileName}</Typography>
+            </FileInfo>
+          )}
+        </InputGroup>
+      </UploadBox>
+    </Paper>
   );
 };
 
