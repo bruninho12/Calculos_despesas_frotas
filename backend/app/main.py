@@ -185,11 +185,22 @@ async def processar_planilhas(
         os.makedirs(backup_path, exist_ok=True)
         shutil.copy2(output_path, os.path.join(backup_path, f"resultado_{processo_id}.xlsx"))
         
-        # Retornar o arquivo processado
-        return FileResponse(
-            output_path, 
-            filename='planilha_organizada.xlsx', 
-            media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        # Retornar o arquivo processado usando StreamingResponse para melhor compatibilidade com CORS
+        with open(output_path, "rb") as f:
+            content = f.read()
+            
+        headers = {
+            'Content-Disposition': 'attachment; filename=planilha_organizada.xlsx',
+            'Access-Control-Expose-Headers': 'Content-Disposition'
+        }
+        
+        from fastapi.responses import StreamingResponse
+        import io
+        
+        return StreamingResponse(
+            io.BytesIO(content),
+            media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            headers=headers
         )
     except subprocess.CalledProcessError as e:
         logger.error(f"[{processo_id}] Erro no processamento do script: {str(e)}")

@@ -7,12 +7,13 @@ import {
   Grid,
   Alert,
 } from "@mui/material";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import ProcessarKM from "./components/ProcessarKM";
 import Header from "./components/Header";
 import UploadForm from "./components/UploadForm";
-
+import Message from "./components/Message";
 import DataTable from "./components/DataTable";
 import CorrespondenciaInfo from "./components/CorrespondenciaInfo";
 import {
@@ -30,7 +31,7 @@ function App() {
   const [progresso, setProgresso] = useState(0);
   const [telaAtual, setTelaAtual] = useState("inicial");
   const [planilhaProcessada, setPlanilhaProcessada] = useState(null);
-  const [alertOpen, setAlertOpen] = useState(false);
+  const [messageOpen, setMessageOpen] = useState(false);
   const [previewData, setPreviewData] = useState({
     custos: null,
     frotas: null,
@@ -67,14 +68,14 @@ function App() {
   const carregarPrevia = async () => {
     if (!planilhaCustos || !relacaoFrotas) {
       setErro("Selecione ambas as planilhas para visualizar a prévia.");
-      setAlertOpen(true);
+      setMessageOpen(true);
       return;
     }
 
     setCarregando(true);
     setErro("");
     setMensagem("Carregando prévia dos dados...");
-    setAlertOpen(true);
+    setMessageOpen(true);
 
     const formData = new FormData();
     formData.append("planilha_custos", planilhaCustos);
@@ -104,7 +105,7 @@ function App() {
       setErro(`Erro ao conectar com o servidor: ${err.message}`);
     } finally {
       setCarregando(false);
-      setAlertOpen(true);
+      setMessageOpen(true);
     }
   };
 
@@ -115,13 +116,13 @@ function App() {
 
     if (!planilhaCustos) {
       setErro("Selecione a Planilha de Custos.");
-      setAlertOpen(true);
+      setMessageOpen(true);
       return;
     }
 
     if (!relacaoFrotas) {
       setErro("Selecione a Relação de Frotas.");
-      setAlertOpen(true);
+      setMessageOpen(true);
       return;
     }
 
@@ -150,8 +151,6 @@ function App() {
       }
 
       const blob = await response.blob();
-      setProgresso(50);
-      const url = window.URL.createObjectURL(blob);
 
       try {
         const planilhaFile = new File([blob], "planilha_organizada.xlsx", {
@@ -170,6 +169,7 @@ function App() {
         );
       }
 
+      const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = "planilha_organizada.xlsx";
@@ -182,10 +182,9 @@ function App() {
       setTimeout(() => setTelaAtual("processar-km"), 2000);
     } catch (err) {
       setErro(err?.message || "Erro de conexão com o servidor.");
-    } finally {
-      setCarregando(false);
-      setAlertOpen(true);
     }
+    setCarregando(false);
+    setMessageOpen(true);
   };
 
   const voltarParaInicial = () => setTelaAtual("inicial");
@@ -195,11 +194,11 @@ function App() {
       setTelaAtual("processar-km");
     } else {
       setErro("Você precisa processar as planilhas iniciais primeiro!");
-      setAlertOpen(true);
+      setMessageOpen(true);
     }
   };
 
-  const handleCloseAlert = () => setAlertOpen(false);
+  const handleCloseMessage = () => setMessageOpen(false);
 
   return (
     <PageContainer>
@@ -222,7 +221,7 @@ function App() {
         >
           <Box
             component="img"
-            src="/frontend/src/truck-icon" // Caminho corrigido para o ícone
+            src="/truck-icon.png"
             alt=""
             sx={{ width: 40, height: 40 }}
           />
@@ -400,7 +399,7 @@ function App() {
         </ContentContainer>
       )}
 
-      {(erro || mensagem) && alertOpen && (
+      {(erro || mensagem) && (
         <Box
           sx={{
             position: "fixed",
@@ -412,7 +411,7 @@ function App() {
         >
           <Alert
             severity={erro ? "error" : "success"}
-            onClose={handleCloseAlert}
+            onClose={handleCloseMessage}
             sx={{ minWidth: "300px" }}
           >
             {erro || mensagem}
