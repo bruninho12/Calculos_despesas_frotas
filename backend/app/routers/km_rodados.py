@@ -247,52 +247,25 @@ async def processar_km_rodados(
         km_df["NUM_FROTA"] = km_df["NUM_FROTA"].astype(str)
         organizada_df["NUM_FROTA"] = organizada_df["NUM_FROTA"].astype(str)
         
-<<<<<<< HEAD
+        # Garantir que KM_ATUAL seja numérico
+        km_df["KM_ATUAL"] = pd.to_numeric(km_df["KM_ATUAL"], errors="coerce")
+
         # CÁLCULO 1: Km Rodados por Mês (KM_MAX - KM_MIN)
         # Agrupar por Frota e Mês, calcular KM_MIN e KM_MAX
         km_mensal = km_df.groupby(["NUM_FROTA", "MES_ANO"])["KM_ATUAL"].agg([
             ("KM_MIN", "min"),
             ("KM_MAX", "max")
         ]).reset_index()
-        
-        # Calcular KM rodados
+
         # Calcular KM rodados, mas se faltar min/max, retorna mensagem personalizada
         def calcula_km_rodado(row):
             if pd.isna(row["KM_MIN"]) or pd.isna(row["KM_MAX"]):
                 return "Dados insuficientes para cálculo"
-            return row["KM_MAX"] - row["KM_MIN"]
+            if row["KM_MAX"] < row["KM_MIN"]:
+                return "Odômetro resetado ou dados inconsistentes"
+            return round(row["KM_MAX"] - row["KM_MIN"], 2)
 
         km_mensal["Km Rodados Mês"] = km_mensal.apply(calcula_km_rodado, axis=1)
-=======
-        # Garantir que KM_ATUAL seja numérico
-km_df["KM_ATUAL"] = pd.to_numeric(km_df["KM_ATUAL"], errors="coerce")
-
-# Garantir que MES_ANO seja datetime
-km_df["MES_ANO"] = pd.to_datetime(km_df["MES_ANO"], errors="coerce")
-
-# Função para calcular o KM rodado de forma robusta
-def calcular_km_rodado(grupo: pd.DataFrame):
-    grupo = grupo.sort_values("MES_ANO")
-    km_min = grupo["KM_ATUAL"].iloc[0]
-    km_max = grupo["KM_ATUAL"].iloc[-1]
-
-    if pd.isna(km_min) or pd.isna(km_max):
-        return "Dados insuficientes"
-    if km_max < km_min:
-        return "Odômetro resetado ou dados inconsistentes"
-    return round(km_max - km_min, 2)
-
-# Agrupar por Frota e Mês (usando Period para evitar mistura de datas)
-km_mensal = (
-    km_df.groupby(["NUM_FROTA", km_df["MES_ANO"].dt.to_period("M")])
-         .apply(calcular_km_rodado)
-         .reset_index()
-)
-
-km_mensal.columns = ["NUM_FROTA", "MES_ANO", "Km Rodados Mês"]
-
-
->>>>>>> 48864345587c7d8b84a0606165cc8181702a686f
         
         # CÁLCULO 2: Quantidade de Litros Consumidos
         # Filtrar apenas lançamentos de combustível
@@ -334,10 +307,10 @@ km_mensal.columns = ["NUM_FROTA", "MES_ANO", "Km Rodados Mês"]
         for idx, row in dados_km.iterrows():
             frota = row["NUM_FROTA"]
             mes = row["MES_ANO"]
-            
+
             # Procurar na planilha organizada
             filtro_frota = organizada_df["NUM_FROTA"] == frota
-            
+
             # Verificar se temos correspondência exata de mês ou se usamos "Total"
             if mes == "Total" or "Mês" not in organizada_df.columns:
                 filtro_mes = organizada_df["Mês"].notna()  # todas as linhas
@@ -346,26 +319,35 @@ km_mensal.columns = ["NUM_FROTA", "MES_ANO", "Km Rodados Mês"]
                 filtro_mes = organizada_df["Mês"] == mes
                 if not any(filtro_frota & filtro_mes):
                     filtro_mes = organizada_df["Mês"].notna()
-            
+
             # Filtrar os dados
             despesas_frota = organizada_df[filtro_frota & filtro_mes]
-            
-            if not despesas_frota.empty and "Total Despesas" in despesas_frota.columns:
-                # Somar todas as despesas para esta frota/mês
+
+            km_rodados = row["Km Rodados Mês"]
+            # Só faz cálculo se km_rodados for numérico e maior que zero
+            if (
+                not despesas_frota.empty and
+                "Total Despesas" in despesas_frota.columns and
+                isinstance(km_rodados, (int, float)) and
+                not pd.isna(km_rodados) and
+                km_rodados > 0
+            ):
                 total_despesas = despesas_frota["Total Despesas"].sum()
-                
-                # Calcular custo por km rodado
-                km_rodados = row["Km Rodados Mês"]
-                if km_rodados > 0:
-                    dados_km.at[idx, "Custo / Km Rodado"] = total_despesas / km_rodados
+                dados_km.at[idx, "Custo / Km Rodado"] = total_despesas / km_rodados
         
         # Calcular Média Consumo (Km/L)
         dados_km["Média Consumo (Km/L ou L/Hr)"] = 0.0
         for idx, row in dados_km.iterrows():
             km_rodados = row["Km Rodados Mês"]
             litros = row["Qtd Litros Consumidos"] if pd.notna(row["Qtd Litros Consumidos"]) else 0
-            
-            if km_rodados > 0 and litros > 0:
+
+            # Só faz cálculo se km_rodados for numérico e maior que zero
+            if (
+                isinstance(km_rodados, (int, float)) and
+                not pd.isna(km_rodados) and
+                km_rodados > 0 and
+                litros > 0
+            ):
                 dados_km.at[idx, "Média Consumo (Km/L ou L/Hr)"] = km_rodados / litros
         
         # Remover colunas intermediárias usadas para cálculo
@@ -440,31 +422,33 @@ km_mensal.columns = ["NUM_FROTA", "MES_ANO", "Km Rodados Mês"]
             
             # Adicionar uma planilha com dados calculados resumidos
             if "NUM_FROTA" in resultado_df.columns and all(col in resultado_df.columns for col in colunas_numericas):
+                # Filtrar apenas linhas com valores numéricos em "Km Rodados Mês" para o resumo
+                df_resumo = resultado_df[pd.to_numeric(resultado_df["Km Rodados Mês"], errors="coerce").notna()].copy()
                 # Criar um resumo por frota
-                resumo_df = resultado_df.groupby("NUM_FROTA")[colunas_numericas].agg({
+                resumo_df = df_resumo.groupby("NUM_FROTA")[colunas_numericas].agg({
                     "Km Rodados Mês": "sum",
                     "Qtd Litros Consumidos": "sum",
                     "Custo / Km Rodado": "mean",
                     "Média Consumo (Km/L ou L/Hr)": "mean"
                 }).reset_index()
-                
+
                 # Não arredondar nenhum valor para preservar a precisão exata dos números
                 # Os formatos serão aplicados apenas na exibição do Excel
-                
+
                 # Adicionar coluna com total de despesas sem arredondar
                 resumo_df["Total Despesas"] = resumo_df["Km Rodados Mês"] * resumo_df["Custo / Km Rodado"]
-                
+
                 # Salvar resumo
                 resumo_df.to_excel(writer, sheet_name='Resumo por Frota', index=False)
-                
+
                 # Aplicar formatação para preservar os decimais exatos na planilha de resumo
                 worksheet_resumo = writer.sheets['Resumo por Frota']
-                
+
                 # Obter índice das colunas no resumo
                 col_resumo_indices = {}
                 for i, col_name in enumerate(resumo_df.columns):
                     col_resumo_indices[col_name] = i + 1  # Excel começa em 1
-                
+
                 # Aplicar formatos para todas as colunas numéricas no resumo
                 formatos_resumo = {
                     "Km Rodados Mês": '#,##0',  # Sem decimais
@@ -473,7 +457,7 @@ km_mensal.columns = ["NUM_FROTA", "MES_ANO", "Km Rodados Mês"]
                     "Média Consumo (Km/L ou L/Hr)": '#,##0.00',  # 2 casas decimais
                     "Total Despesas": '#,##0.00'  # 2 casas decimais
                 }
-                
+
                 # Aplicar formatos para cada coluna
                 for col_name, formato in formatos_resumo.items():
                     if col_name in col_resumo_indices:
