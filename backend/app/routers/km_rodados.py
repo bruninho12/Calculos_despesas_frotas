@@ -355,8 +355,8 @@ async def processar_km_rodados(
             ):
                 dados_km.at[idx, "Média Consumo (Km/L ou L/Hr)"] = km_rodados / litros
         
-        # Remover colunas intermediárias usadas para cálculo
-        dados_km = dados_km.drop(columns=["KM_MIN", "KM_MAX"])
+    # Remover colunas intermediárias usadas para cálculo (não há mais KM_MIN e KM_MAX)
+    # dados_km = dados_km.drop(columns=["KM_MIN", "KM_MAX"])
         
         # Unir dados com a planilha organizada original
         # Primeiro criar uma chave única para juntar corretamente
