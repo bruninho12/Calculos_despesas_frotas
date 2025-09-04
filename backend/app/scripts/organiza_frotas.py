@@ -3,6 +3,29 @@ import os
 from datetime import datetime
 import openpyxl
 import sys
+import locale
+
+# Configurar locale para pt_BR para tratar números corretamente
+try:
+    locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
+except:
+    try:
+        locale.setlocale(locale.LC_ALL, 'Portuguese_Brazil.1252')
+    except:
+        print("Aviso: Não foi possível configurar o locale para pt_BR")
+
+def converter_numero(valor):
+    """Converte strings de números para float, tratando diferentes formatos"""
+    if pd.isna(valor):
+        return 0.0
+    if isinstance(valor, (int, float)):
+        return float(valor)
+    try:
+        # Remove espaços e substitui vírgula por ponto
+        valor_limpo = str(valor).strip().replace('.', '').replace(',', '.')
+        return float(valor_limpo)
+    except:
+        return 0.0
 
 # Permitir argumentos: custos, frotas, saida
 if len(sys.argv) >= 3:
@@ -14,79 +37,96 @@ else:
     caminho_frotas = 'Relação de frotas.xlsx'
     caminho_saida = 'planilha_organizada.xlsx'
 
-# Leitura das planilhas
-custos = pd.read_excel(caminho_custos)
-frotas = pd.read_excel(caminho_frotas)
+# Leitura das planilhas com tratamento de números
+custos = pd.read_excel(caminho_custos, dtype={'NUM_FROTA': str})
+frotas = pd.read_excel(caminho_frotas, dtype={'NUM_FROTA': str})
 
-# Análise inicial das planilhas
-print('--- ANÁLISE PLANILHA DE CUSTOS ---')
-print('Colunas:', list(custos.columns))
-print(custos.head())
-print('\n--- ANÁLISE PLANILHA DE FROTAS ---')
-print('Colunas:', list(frotas.columns))
-print(frotas.head())
+    # Converte colunas numéricas
+for col in ['QTDE_ITEM', 'VLR_TOT_ITEM', 'VLR_ICMS']:
+    if col in custos.columns:
+        custos[col] = custos[col].apply(converter_numero)
 
+try:
+    # Análise inicial das planilhas
+    print('--- ANÁLISE PLANILHA DE CUSTOS ---')
+    print('Colunas:', list(custos.columns))
+    print(custos.head())
+    print('\n--- ANÁLISE PLANILHA DE FROTAS ---')
+    print('Colunas:', list(frotas.columns))
+    print(frotas.head())
 
-# Normaliza datas e extrai mês
-if 'DTA_MOVIMENTO' in custos.columns:
-    custos['Mês'] = pd.to_datetime(custos['DTA_MOVIMENTO']).dt.strftime('%m/%Y')
-else:
-    custos['Mês'] = ''
+    # Normaliza datas e extrai mês
+    if 'DTA_MOVIMENTO' in custos.columns:
+        custos['Mês'] = pd.to_datetime(custos['DTA_MOVIMENTO']).dt.strftime('%m/%Y')
+    else:
+        custos['Mês'] = ''
 
-# Junta custos com dados da frota
-dados = pd.merge(custos, frotas, on='NUM_FROTA', how='left')
+    # Junta custos com dados da frota
+    dados = pd.merge(custos, frotas, on='NUM_FROTA', how='left')
+except Exception as e:
+    print(f"Erro durante a análise inicial das planilhas: {str(e)}")
+    sys.exit(1)
 
-# Verifica se existe a coluna ANO_MODELO_VEICULO na tabela de frotas
-if 'ANO_MODELO_VEICULO' not in frotas.columns:
-    # Se não existir, criar a coluna com valores vazios
-    frotas['ANO_MODELO_VEICULO'] = ''
-    print("Coluna ANO_MODELO_VEICULO não encontrada na planilha de frotas. Criando coluna vazia.")
+try:
+    # Verifica se existe a coluna ANO_MODELO_VEICULO na tabela de frotas
+    if 'ANO_MODELO_VEICULO' not in frotas.columns:
+        # Se não existir, criar a coluna com valores vazios
+        frotas['ANO_MODELO_VEICULO'] = ''
+        print("Coluna ANO_MODELO_VEICULO não encontrada na planilha de frotas. Criando coluna vazia.")
 
-# Pivot para organizar por tipo de gasto
-if 'DSC_ITEMTABELA' in dados.columns:
-    tabela = dados.pivot_table(index=['Mês', 'NUM_FROTA', 'ANO_MODELO_VEICULO', 'DSC_MARCA', 'DSC_TIPO'],
-                              columns='DSC_ITEMTABELA',
-                              values='VLR_TOT_ITEM',
-                              aggfunc='sum',
-                              fill_value=0).reset_index()
-else:
-    tabela = dados
+    # Pivot para organizar por tipo de gasto
+    if 'DSC_ITEMTABELA' in dados.columns:
+        tabela = dados.pivot_table(index=['Mês', 'NUM_FROTA', 'ANO_MODELO_VEICULO', 'DSC_MARCA', 'DSC_TIPO'],
+                                columns='DSC_ITEMTABELA',
+                                values='VLR_TOT_ITEM',
+                                aggfunc='sum',
+                                fill_value=0).reset_index()
+    else:
+        tabela = dados
 
-# Renomeia colunas para facilitar
-colunas_renomeadas = {
-    'Combustíveis e Lubrificantes': 'Combustível',
-    'Pedágio': 'Pedágios',
-    'Viagens': 'Viagens e Estadias',
-    # Adicione outros tipos de gasto conforme necessário
-}
-tabela = tabela.rename(columns=colunas_renomeadas)
+    # Renomeia colunas para facilitar
+    colunas_renomeadas = {
+        'Combustíveis e Lubrificantes': 'Combustível',
+        'Pedágio': 'Pedágios',
+        'Viagens': 'Viagens e Estadias',
+        # Adicione outros tipos de gasto conforme necessário
+    }
+    tabela = tabela.rename(columns=colunas_renomeadas)
+except Exception as e:
+    print(f"Erro durante o processamento dos dados: {str(e)}")
+    sys.exit(1)
 
-# Calcula o total de despesas
-# Identifica colunas numéricas (excluindo colunas de identificação como Mês, NUM_FROTA, etc)
-colunas_despesas = [col for col in tabela.columns if col not in ['Mês', 'NUM_FROTA', 'ANO_MODELO_VEICULO', 'DSC_MARCA', 'DSC_TIPO']]
-tabela['Total Despesas'] = tabela[colunas_despesas].sum(axis=1)
+try:
+    # Calcula o total de despesas
+    # Identifica colunas numéricas (excluindo colunas de identificação como Mês, NUM_FROTA, etc)
+    colunas_despesas = [col for col in tabela.columns if col not in ['Mês', 'NUM_FROTA', 'ANO_MODELO_VEICULO', 'DSC_MARCA', 'DSC_TIPO']]
+    tabela['Total Despesas'] = tabela[colunas_despesas].sum(axis=1)
 
-# Reordena as colunas para colocar Total Despesas após Viagens e Estadias
-todas_colunas = list(tabela.columns)
-if 'Viagens e Estadias' in todas_colunas:
-    # Remove Total Despesas da lista
-    if 'Total Despesas' in todas_colunas:
-        todas_colunas.remove('Total Despesas')
-    # Encontra a posição da coluna Viagens e Estadias
-    pos_viagens = todas_colunas.index('Viagens e Estadias')
-    # Insere Total Despesas logo após Viagens e Estadias
-    todas_colunas.insert(pos_viagens + 1, 'Total Despesas')
-    # Reordena a tabela
-    tabela = tabela[todas_colunas]
+    # Reordena as colunas para colocar Total Despesas após Viagens e Estadias
+    todas_colunas = list(tabela.columns)
+    if 'Viagens e Estadias' in todas_colunas:
+        # Remove Total Despesas da lista
+        if 'Total Despesas' in todas_colunas:
+            todas_colunas.remove('Total Despesas')
+        # Encontra a posição da coluna Viagens e Estadias
+        pos_viagens = todas_colunas.index('Viagens e Estadias')
+        # Insere Total Despesas logo após Viagens e Estadias
+        todas_colunas.insert(pos_viagens + 1, 'Total Despesas')
+        # Reordena a tabela
+        tabela = tabela[todas_colunas]
 
-# Salva a planilha organizada com estilização
-with pd.ExcelWriter(caminho_saida, engine='openpyxl') as writer:
-    tabela.to_excel(writer, index=False)
-    
-    # Acessa o arquivo para formatação
-    workbook = writer.book
-    worksheet = writer.sheets['Sheet1']
-    
+    # Salva a planilha organizada com estilização
+    with pd.ExcelWriter(caminho_saida, engine='openpyxl') as writer:
+        tabela.to_excel(writer, index=False)
+        
+        # Acessa o arquivo para formatação
+        workbook = writer.book
+        worksheet = writer.sheets['Sheet1']
+except Exception as e:
+    print(f"Erro durante o processamento dos totais e reordenação: {str(e)}")
+    sys.exit(1)
+
+try:
     # Configurações de estilo
     from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
     
@@ -105,7 +145,7 @@ with pd.ExcelWriter(caminho_saida, engine='openpyxl') as writer:
         cell.font = header_font
         cell.fill = header_fill
         cell.border = thin_border
-        cell.alignment = Alignment(horizontal='center', vertical='center')
+        cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
     
     # Formatar todas as células com borda
     for row in worksheet.iter_rows(min_row=2, max_row=worksheet.max_row):
@@ -135,6 +175,8 @@ with pd.ExcelWriter(caminho_saida, engine='openpyxl') as writer:
             for row in range(2, worksheet.max_row + 1):
                 cell = worksheet[f"{col_letter}{row}"]
                 cell.number_format = 'R$ #,##0.00'
+                if col_name == 'Total Despesas':
+                    cell.fill = PatternFill(start_color='D3D3D3', end_color='D3D3D3', fill_type='solid')
         
         # Colunas de quilometragem
         elif 'KM' in col_name:
@@ -150,15 +192,9 @@ with pd.ExcelWriter(caminho_saida, engine='openpyxl') as writer:
     
     # Adicionar filtros no cabeçalho
     worksheet.auto_filter.ref = worksheet.dimensions
-    
-    if col_idx:
-        # Formata a coluna de Total Despesas com estilo monetário
-        # A formatação será aplicada a partir da segunda linha (pulando o cabeçalho)
-        for row in range(2, len(tabela) + 2):
-            cell = worksheet.cell(row=row, column=col_idx)
-            cell.number_format = 'R$ #,##0.00'
-            # Opcional: adicionar cor de fundo para destacar
-            cell.fill = openpyxl.styles.PatternFill(start_color='D3D3D3', end_color='D3D3D3', fill_type='solid')
+except Exception as e:
+    print(f"Erro durante a formatação da planilha: {str(e)}")
+    sys.exit(1)
 
 print(f'Planilha organizada salva em: {os.path.abspath(caminho_saida)}')
 
