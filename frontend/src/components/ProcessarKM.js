@@ -1,8 +1,62 @@
 import React, { useState } from "react";
+import {
+  Box,
+  Paper,
+  Typography,
+  Button,
+  CircularProgress,
+  Alert,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Divider,
+} from "@mui/material";
+import { styled } from "@mui/material/styles";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import InfoIcon from "@mui/icons-material/Info";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import UploadFileIcon from "@mui/icons-material/UploadFile";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 
-// URL base para a API - em produção, isso será substituído pela URL real do servidor
-// Em produção, use um valor relativo como "/api" ou uma variável de ambiente
+// URL base para a API
 const API_BASE_URL = process.env.REACT_APP_API_URL || "/api";
+
+// Styled Components
+const UploadBox = styled(Box)(({ theme }) => ({
+  display: "flex",
+  flexDirection: "column",
+  gap: theme.spacing(3),
+  padding: theme.spacing(3),
+}));
+
+const FileInput = styled("input")({
+  display: "none",
+});
+
+const UploadButton = styled(Button)(({ theme }) => ({
+  width: "100%",
+  padding: theme.spacing(2),
+  borderStyle: "dashed",
+  borderWidth: 2,
+  textTransform: "none",
+}));
+
+const FileInfo = styled(Box)(({ theme }) => ({
+  display: "flex",
+  alignItems: "center",
+  gap: theme.spacing(1),
+  padding: theme.spacing(1),
+  backgroundColor: theme.palette.grey[50],
+  borderRadius: theme.shape.borderRadius,
+}));
 
 function ProcessarKM({ planilhaOrganizada }) {
   // Debug para verificar o que está sendo recebido como planilhaOrganizada
@@ -294,94 +348,158 @@ function ProcessarKM({ planilhaOrganizada }) {
   }
 
   return (
-    <div className="container">
-      <h1 className="title">Processar Planilha KM Rodados</h1>
-      <p className="description">
+    <Box sx={{ maxWidth: 1200, margin: "0 auto", padding: 3 }}>
+      <Typography variant="h4" component="h1" gutterBottom color="primary">
+        Processar Planilha KM Rodados
+      </Typography>
+      <Typography variant="body1" paragraph>
         Faça upload da planilha com os dados de KM rodados e consumo para
         complementar a análise da planilha organizada.
-      </p>
+      </Typography>
 
-      {erro && (
-        <div className="error-message">
-          <strong>Erro:</strong> {erro}
-          {erro.includes("Colunas") && (
-            <div style={{ marginTop: "10px", fontSize: "14px" }}>
-              <p>
+      {(erro || mensagem) && (
+        <Alert 
+          severity={erro ? "error" : "success"} 
+          sx={{ mb: 3 }}
+          onClose={() => erro ? setErro("") : setMensagem("")}
+        >
+          {erro || mensagem}
+          {erro?.includes("Colunas") && (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="body2" gutterBottom>
                 <strong>Informação:</strong> O sistema agora foi atualizado para
                 calcular automaticamente as métricas necessárias a partir dos
                 dados brutos.
-              </p>
-              <p>
+              </Typography>
+              <Typography variant="body2" gutterBottom>
                 <strong>Colunas necessárias na planilha:</strong>
-              </p>
-              <ul style={{ marginLeft: "20px", marginTop: "5px" }}>
-                <li>
-                  <strong>NUM_FROTA</strong> - Identificador da frota
-                </li>
-                <li>
-                  <strong>KM_ATUAL</strong> - Quilometragem atual no momento do
-                  registro
-                </li>
-                <li>
-                  <strong>DTA_MOVIMENTO</strong> - Data do registro
-                </li>
-                <li>
-                  <strong>QTDE_ITEM</strong> - (opcional) Para calcular litros
-                  consumidos
-                </li>
-                <li>
-                  <strong>DSC_TIPO_DESPESAS</strong> - (opcional) Para
-                  identificar abastecimentos
-                </li>
-              </ul>
-            </div>
+              </Typography>
+              <List dense>
+                <ListItem>
+                  <ListItemIcon>
+                    <InfoIcon color="primary" fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText 
+                    primary="NUM_FROTA"
+                    secondary="Identificador da frota"
+                  />
+                </ListItem>
+                <ListItem>
+                  <ListItemIcon>
+                    <InfoIcon color="primary" fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText 
+                    primary="KM_ATUAL"
+                    secondary="Quilometragem atual no momento do registro"
+                  />
+                </ListItem>
+                <ListItem>
+                  <ListItemIcon>
+                    <InfoIcon color="primary" fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText 
+                    primary="DTA_MOVIMENTO"
+                    secondary="Data do registro"
+                  />
+                </ListItem>
+                <ListItem>
+                  <ListItemIcon>
+                    <InfoIcon color="info" fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText 
+                    primary="QTDE_ITEM (opcional)"
+                    secondary="Para calcular litros consumidos"
+                  />
+                </ListItem>
+                <ListItem>
+                  <ListItemIcon>
+                    <InfoIcon color="info" fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText 
+                    primary="DSC_TIPO_DESPESAS (opcional)"
+                    secondary="Para identificar abastecimentos"
+                  />
+                </ListItem>
+              </List>
+            </Box>
           )}
-        </div>
+        </Alert>
       )}
-      {mensagem && <div className="success-message">{mensagem}</div>}
 
-      <form className="upload-form">
-        <div className="file-input-container">
-          <label className="file-input-label">
-            <span>Planilha de KM Rodados</span>
-            <div className="file-input-wrapper">
-              <input
+      <Paper elevation={2}>
+        <UploadBox>
+          <Box>
+            <Typography variant="h6" color="primary" gutterBottom>
+              Planilha de KM Rodados
+            </Typography>
+            <label htmlFor="km-upload">
+              <FileInput
+                id="km-upload"
                 type="file"
                 accept=".xlsx,.xls"
                 onChange={handleSelectFile}
-                className="file-input"
               />
-              <span className="file-input-button">Selecionar Arquivo</span>
-            </div>
+              <UploadButton
+                variant="outlined"
+                component="span"
+                startIcon={<UploadFileIcon />}
+              >
+                {planilhaKMNome || 'Selecionar arquivo da planilha de KM'}
+              </UploadButton>
+            </label>
             {planilhaKMNome && (
-              <div className="selected-file">
-                Arquivo selecionado: {planilhaKMNome}
-              </div>
+              <FileInfo>
+                <CheckCircleOutlineIcon color="success" fontSize="small" />
+                <Typography variant="body2">{planilhaKMNome}</Typography>
+              </FileInfo>
             )}
-          </label>
-          <div style={{ fontSize: "12px", color: "#666", marginTop: "5px" }}>
-            Envie sua planilha com dados de KM. O sistema calculará
-            automaticamente:
-            <ul style={{ marginTop: "5px", paddingLeft: "15px" }}>
-              <li>
-                <strong>Km Rodados Mês:</strong> Diferença entre KM máximo e
-                mínimo por frota/mês
-              </li>
-              <li>
-                <strong>Qtd Litros Consumidos:</strong> Soma dos abastecimentos
-                por frota/mês
-              </li>
-              <li>
-                <strong>Custo / Km Rodado:</strong> Total Despesas dividido
-                pelos KM rodados
-              </li>
-              <li>
-                <strong>Média Consumo:</strong> KM rodados dividido pela
-                quantidade de litros
-              </li>
-            </ul>
-          </div>
-        </div>{" "}
+          </Box>
+
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="subtitle2" gutterBottom color="text.secondary">
+              O sistema calculará automaticamente:
+            </Typography>
+            <List dense>
+              <ListItem>
+                <ListItemIcon>
+                  <ArrowForwardIcon color="primary" fontSize="small" />
+                </ListItemIcon>
+                <ListItemText 
+                  primary="Km Rodados Mês"
+                  secondary="Diferença entre KM máximo e mínimo por frota/mês"
+                />
+              </ListItem>
+              <ListItem>
+                <ListItemIcon>
+                  <ArrowForwardIcon color="primary" fontSize="small" />
+                </ListItemIcon>
+                <ListItemText 
+                  primary="Qtd Litros Consumidos"
+                  secondary="Soma dos abastecimentos por frota/mês"
+                />
+              </ListItem>
+              <ListItem>
+                <ListItemIcon>
+                  <ArrowForwardIcon color="primary" fontSize="small" />
+                </ListItemIcon>
+                <ListItemText 
+                  primary="Custo / Km Rodado"
+                  secondary="Total Despesas dividido pelos KM rodados"
+                />
+              </ListItem>
+              <ListItem>
+                <ListItemIcon>
+                  <ArrowForwardIcon color="primary" fontSize="small" />
+                </ListItemIcon>
+                <ListItemText 
+                  primary="Média Consumo"
+                  secondary="KM rodados dividido pela quantidade de litros"
+                />
+              </ListItem>
+            </List>
+          </Box>
+        </UploadBox>
+      </Paper>
         <div className="info-box">
           <div className="info-icon">ℹ️</div>
           <div className="info-content">
