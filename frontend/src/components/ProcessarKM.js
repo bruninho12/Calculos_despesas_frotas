@@ -26,7 +26,7 @@ import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 
 // URL base para a API
-const API_BASE_URL = process.env.REACT_APP_API_URL || "/api";
+const API_BASE_URL = "https://frota-api-qro2.onrender.com";
 
 // Styled Components
 const UploadBox = styled(Box)(({ theme }) => ({
