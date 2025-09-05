@@ -6,13 +6,14 @@ import sys
 import locale
 
 # Configurar locale para pt_BR para tratar números corretamente
+# Ajustar configuração do locale para lidar com falhas
 try:
     locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
-except:
+except locale.Error:
     try:
         locale.setlocale(locale.LC_ALL, 'Portuguese_Brazil.1252')
-    except:
-        print("Aviso: Não foi possível configurar o locale para pt_BR")
+    except locale.Error:
+        print("Aviso: Não foi possível configurar o locale para pt_BR. Usando configurações padrão.")
 
 def converter_numero(valor):
     """Converte strings de números para float, tratando diferentes formatos"""
@@ -157,8 +158,12 @@ try:
     # Configurações de estilo
     from openpyxl.styles import Font, PatternFill, Border, Side, Alignment, Color
     
-    # Inserir título e ano
-    worksheet.merge_cells('A1:P1')
+    # Adicionar uma linha no topo para o título
+    worksheet.insert_rows(1)
+    
+    # Configurar o título
+    titulo_range = f'A1:{openpyxl.utils.get_column_letter(worksheet.max_column)}1'
+    worksheet.merge_cells(titulo_range)
     titulo_cell = worksheet['A1']
     titulo_cell.value = "DEMONSTRATIVO DE FECHAMENTO FERTFER"
     titulo_cell.font = Font(name='Arial', size=14, bold=True, color="FFFFFF")
@@ -167,17 +172,6 @@ try:
     
     # Ajustar altura da linha do título
     worksheet.row_dimensions[1].height = 30
-    
-    # Linha para dados começa após o título
-    data_start_row = 2
-    
-    # Mover dados uma linha para baixo para acomodar o título
-    for row in range(worksheet.max_row, 1, -1):
-        for col in range(1, worksheet.max_column + 1):
-            source_cell = worksheet.cell(row=row-1, column=col)
-            target_cell = worksheet.cell(row=row, column=col)
-            target_cell._value = source_cell._value
-            target_cell.style = source_cell.style
     
     # Estilos para cabeçalho de dados
     header_font = Font(bold=True, size=11, color="FFFFFF")  # Texto branco
@@ -231,24 +225,31 @@ try:
         'Total Despesas': 15
     }
     
+    # Função auxiliar para verificar se uma célula é mesclada
+    def is_merged_cell(cell):
+        return isinstance(cell, openpyxl.cell.cell.MergedCell)
+
+    # Ajustar formatação para evitar erro com células mescladas
     for column in worksheet.columns:
-        col_letter = column[0].column_letter
-        col_name = worksheet.cell(row=1, column=column[0].column).value
-        
+        col_letter = column[0].column_letter if not is_merged_cell(column[0]) else None
+        col_name = worksheet.cell(row=1, column=column[0].column).value if col_letter else None
+
         # Calcula a largura máxima do conteúdo
         max_length = 0
         for cell in column:
-            try:
-                if cell.value:
-                    max_length = max(max_length, len(str(cell.value)))
-            except:
-                pass
-                
+            if not is_merged_cell(cell):
+                try:
+                    if cell.value:
+                        max_length = max(max_length, len(str(cell.value)))
+                except:
+                    pass
+
         # Usa o valor mínimo definido ou calculado
-        min_width = min_widths.get(col_name, 10)  # valor padrão de 10 se não especificado
+        min_width = min_widths.get(col_name, 10) if col_name else 10
         adjusted_width = max(min_width, max_length + 2)
-        
-        worksheet.column_dimensions[col_letter].width = adjusted_width
+
+        if col_letter:
+            worksheet.column_dimensions[col_letter].width = adjusted_width
     
     try:
         # Criar botão Menu no topo da planilha
