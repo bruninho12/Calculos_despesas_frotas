@@ -2,6 +2,7 @@ import pandas as pd
 import os
 from datetime import datetime
 import openpyxl
+from openpyxl.styles import Font, PatternFill, Border, Side, Alignment, Color
 import sys
 import locale
 
@@ -27,6 +28,10 @@ def converter_numero(valor):
         return float(valor_limpo)
     except:
         return 0.0
+
+def is_merged_cell(cell):
+    """Função auxiliar para verificar se uma célula é mesclada"""
+    return isinstance(cell, openpyxl.cell.cell.MergedCell)
 
 def estilizar_celula_botao(cell):
     """Aplica estilo de botão a uma célula"""
@@ -69,7 +74,7 @@ if diretorio_saida and not os.path.exists(diretorio_saida):
 custos = pd.read_excel(caminho_custos, dtype={'NUM_FROTA': str})
 frotas = pd.read_excel(caminho_frotas, dtype={'NUM_FROTA': str})
 
-    # Converte colunas numéricas
+# Converte colunas numéricas
 for col in ['QTDE_ITEM', 'VLR_TOT_ITEM', 'VLR_ICMS']:
     if col in custos.columns:
         custos[col] = custos[col].apply(converter_numero)
@@ -156,7 +161,6 @@ except Exception as e:
 
 try:
     # Configurações de estilo
-    from openpyxl.styles import Font, PatternFill, Border, Side, Alignment, Color
     
     # Adicionar uma linha no topo para o título
     worksheet.insert_rows(1)
@@ -192,22 +196,24 @@ try:
         bottom=Side(style='thin', color='000000')
     )
     
-    # Aplicar estilo no cabeçalho
-    for cell in worksheet[1]:
-        cell.font = header_font
-        cell.fill = header_fill
-        cell.border = thick_border
-        cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+    # Aplicar estilo no cabeçalho (linha 2, pois linha 1 é o título)
+    for cell in worksheet[2]:
+        if cell.value:  # Só aplica estilo se a célula tem valor
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.border = thick_border
+            cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
     
     # Fonte padrão para todas as células
     default_font = Font(name='Arial', size=10)
     
-    # Formatar todas as células com borda
-    for row in worksheet.iter_rows(min_row=2, max_row=worksheet.max_row):
+    # Formatar todas as células com borda (começando da linha 3)
+    for row in worksheet.iter_rows(min_row=3, max_row=worksheet.max_row):
         for cell in row:
-            cell.border = thin_border
-            cell.alignment = Alignment(horizontal='center', vertical='center')
-            cell.font = default_font
+            if cell.value is not None:  # Só formata células que têm valor
+                cell.border = thin_border
+                cell.alignment = Alignment(horizontal='center', vertical='center')
+                cell.font = default_font
             
     # Estilo especial para a última linha (totais)
     for cell in worksheet[worksheet.max_row]:
@@ -225,31 +231,31 @@ try:
         'Total Despesas': 15
     }
     
-    # Função auxiliar para verificar se uma célula é mesclada
-    def is_merged_cell(cell):
-        return isinstance(cell, openpyxl.cell.cell.MergedCell)
-
     # Ajustar formatação para evitar erro com células mescladas
     for column in worksheet.columns:
-        col_letter = column[0].column_letter if not is_merged_cell(column[0]) else None
-        col_name = worksheet.cell(row=1, column=column[0].column).value if col_letter else None
+        try:
+            col_letter = column[0].column_letter if not is_merged_cell(column[0]) else None
+            col_name = worksheet.cell(row=2, column=column[0].column).value if col_letter else None
 
-        # Calcula a largura máxima do conteúdo
-        max_length = 0
-        for cell in column:
-            if not is_merged_cell(cell):
-                try:
-                    if cell.value:
-                        max_length = max(max_length, len(str(cell.value)))
-                except:
-                    pass
+            # Calcula a largura máxima do conteúdo
+            max_length = 0
+            for cell in column:
+                if not is_merged_cell(cell):
+                    try:
+                        if cell.value:
+                            max_length = max(max_length, len(str(cell.value)))
+                    except:
+                        pass
 
-        # Usa o valor mínimo definido ou calculado
-        min_width = min_widths.get(col_name, 10) if col_name else 10
-        adjusted_width = max(min_width, max_length + 2)
+            # Usa o valor mínimo definido ou calculado
+            min_width = min_widths.get(col_name, 10) if col_name else 10
+            adjusted_width = max(min_width, max_length + 2)
 
-        if col_letter:
-            worksheet.column_dimensions[col_letter].width = adjusted_width
+            if col_letter:
+                worksheet.column_dimensions[col_letter].width = adjusted_width
+        except Exception as e:
+            print(f"Aviso: Erro ao ajustar largura da coluna: {str(e)}")
+            continue
     
     try:
         # Criar botão Menu no topo da planilha
@@ -276,36 +282,40 @@ try:
         print(f"Aviso: Não foi possível criar todos os botões: {str(e)}")
         # Continua a execução mesmo se houver erro nos botões
         
-    # Congelar painel no cabeçalho
-    worksheet.freeze_panes = 'A2'
+    # Congelar painel no cabeçalho (linha 3, após título e cabeçalho)
+    worksheet.freeze_panes = 'A3'
 
     # Aplicar formatação específica para cada tipo de coluna
     for idx, col_name in enumerate(tabela.columns, 1):
-        col_letter = worksheet.cell(row=1, column=idx).column_letter
-        
-        # Colunas monetárias
-        if any(word in col_name for word in ['Despesas', 'Combustível', 'Pedágios', 'Viagens', 'Comb.', 'Lub.']):
-            for row in range(2, worksheet.max_row + 1):
-                cell = worksheet[f"{col_letter}{row}"]
-                cell.number_format = 'R$ #,##0.00'
-                # Alinhamento à direita para valores monetários
-                cell.alignment = Alignment(horizontal='right', vertical='center')
-                if col_name == 'Total Despesas':
-                    cell.fill = PatternFill(start_color='D9D9D9', end_color='D9D9D9', fill_type='solid')
-                    cell.font = Font(name='Arial', size=10, bold=True)
-        
-        # Colunas de quilometragem ou números inteiros
-        elif any(term in col_name for term in ['KM', 'Qtd', 'Quantidade']):
-            for row in range(2, worksheet.max_row + 1):
-                cell = worksheet[f"{col_letter}{row}"]
-                cell.number_format = '#,##0'
-                cell.alignment = Alignment(horizontal='right', vertical='center')
-                
-        # Colunas de texto (como Mês, NUM_FROTA, etc)
-        else:
-            for row in range(2, worksheet.max_row + 1):
-                cell = worksheet[f"{col_letter}{row}"]
-                cell.alignment = Alignment(horizontal='center', vertical='center')
+        try:
+            col_letter = openpyxl.utils.get_column_letter(idx)
+            
+            # Colunas monetárias
+            if any(word in col_name for word in ['Despesas', 'Combustível', 'Pedágios', 'Viagens', 'Comb.', 'Lub.']):
+                for row in range(3, worksheet.max_row + 1):  # Começa da linha 3 por causa do título
+                    cell = worksheet[f"{col_letter}{row}"]
+                    cell.number_format = 'R$ #,##0.00'
+                    # Alinhamento à direita para valores monetários
+                    cell.alignment = Alignment(horizontal='right', vertical='center')
+                    if col_name == 'Total Despesas':
+                        cell.fill = PatternFill(start_color='D9D9D9', end_color='D9D9D9', fill_type='solid')
+                        cell.font = Font(name='Arial', size=10, bold=True)
+            
+            # Colunas de quilometragem ou números inteiros
+            elif any(term in col_name for term in ['KM', 'Qtd', 'Quantidade']):
+                for row in range(3, worksheet.max_row + 1):
+                    cell = worksheet[f"{col_letter}{row}"]
+                    cell.number_format = '#,##0'
+                    cell.alignment = Alignment(horizontal='right', vertical='center')
+                    
+            # Colunas de texto (como Mês, NUM_FROTA, etc)
+            else:
+                for row in range(3, worksheet.max_row + 1):
+                    cell = worksheet[f"{col_letter}{row}"]
+                    cell.alignment = Alignment(horizontal='center', vertical='center')
+        except Exception as e:
+            print(f"Aviso: Erro ao formatar coluna {col_name}: {str(e)}")
+            continue
     
     # Adicionar filtros no cabeçalho
     worksheet.auto_filter.ref = worksheet.dimensions
