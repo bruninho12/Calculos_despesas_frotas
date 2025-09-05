@@ -216,7 +216,32 @@ async def processar_km_rodados(
         # Processar os dados usando pandas, preservando os decimais
         # Usando o modo padrão do pandas para leitura dos valores
         km_df = pd.read_excel(io.BytesIO(km_content))
-        organizada_df = pd.read_excel(io.BytesIO(organizada_content))
+        
+        # Para a planilha organizada, pular a primeira linha (título) e usar a segunda como cabeçalho
+        organizada_df = pd.read_excel(io.BytesIO(organizada_content), header=1)
+        
+        # Se ainda houver problemas com as colunas, tentar diferentes estratégias
+        colunas_organizada = list(organizada_df.columns)
+        print(f"Colunas encontradas na planilha organizada (tentativa 1): {colunas_organizada}")
+        
+        # Se a primeira tentativa falhou (ainda temos "Unnamed"), tentar header=0 e remover linhas vazias
+        if "NUM_FROTA" not in organizada_df.columns and any("Unnamed" in str(col) for col in organizada_df.columns):
+            print("Tentando estratégia alternativa para ler planilha organizada...")
+            organizada_df = pd.read_excel(io.BytesIO(organizada_content), header=0)
+            # Remover linhas que são completamente vazias ou só têm o título
+            organizada_df = organizada_df.dropna(how='all')
+            # Se a primeira linha for o título, removê-la
+            if len(organizada_df) > 0 and "DEMONSTRATIVO" in str(organizada_df.iloc[0, 0]):
+                organizada_df = organizada_df.iloc[1:].reset_index(drop=True)
+                # Promover a primeira linha restante como cabeçalho
+                if len(organizada_df) > 0:
+                    new_header = organizada_df.iloc[0]
+                    organizada_df = organizada_df[1:]
+                    organizada_df.columns = new_header
+                    organizada_df = organizada_df.reset_index(drop=True)
+            
+            colunas_organizada = list(organizada_df.columns)
+            print(f"Colunas encontradas na planilha organizada (tentativa 2): {colunas_organizada}")
         
         # Listar as colunas encontradas para debug
         colunas_encontradas = list(km_df.columns)
@@ -249,6 +274,7 @@ async def processar_km_rodados(
         # Verificar se NUM_FROTA existe na planilha organizada
         if "NUM_FROTA" not in organizada_df.columns:
             colunas_org = list(organizada_df.columns)
+            print(f"ERRO: NUM_FROTA não encontrado. Colunas disponíveis: {colunas_org}")
             raise HTTPException(
                 status_code=400, 
                 detail=f"Coluna 'NUM_FROTA' não encontrada na planilha organizada. Colunas encontradas: {', '.join(colunas_org)}"
