@@ -27,6 +27,25 @@ def converter_numero(valor):
     except:
         return 0.0
 
+def criar_botao_menu(worksheet, posicao):
+    """Cria um botão de Menu estilizado na posição especificada"""
+    from openpyxl.drawing.shapes import Shape
+    from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
+    
+    cell = worksheet[posicao]
+    
+    # Estilo do botão Menu
+    cell.value = "Menu"
+    cell.font = Font(name='Arial', size=11, bold=True, color="FFFFFF")
+    cell.fill = PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid")
+    cell.border = Border(
+        left=Side(style='thick', color='000000'),
+        right=Side(style='thick', color='000000'),
+        top=Side(style='thick', color='000000'),
+        bottom=Side(style='thick', color='000000')
+    )
+    cell.alignment = Alignment(horizontal='center', vertical='center')
+
 # Permitir argumentos: custos, frotas, saida
 if len(sys.argv) >= 3:
     caminho_custos = sys.argv[1]
@@ -128,67 +147,145 @@ except Exception as e:
 
 try:
     # Configurações de estilo
-    from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
+    from openpyxl.styles import Font, PatternFill, Border, Side, Alignment, Color
     
-    # Estilos para cabeçalho
-    header_font = Font(bold=True, size=11, color="000000")
-    header_fill = PatternFill(start_color="E0E0E0", end_color="E0E0E0", fill_type="solid")
+    # Inserir título e ano
+    worksheet.merge_cells('A1:P1')
+    titulo_cell = worksheet['A1']
+    titulo_cell.value = "DEMONSTRATIVO DE FECHAMENTO FERTFER"
+    titulo_cell.font = Font(name='Arial', size=14, bold=True, color="FFFFFF")
+    titulo_cell.fill = PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid")
+    titulo_cell.alignment = Alignment(horizontal='center', vertical='center')
+    
+    # Ajustar altura da linha do título
+    worksheet.row_dimensions[1].height = 30
+    
+    # Linha para dados começa após o título
+    data_start_row = 2
+    
+    # Mover dados uma linha para baixo para acomodar o título
+    for row in range(worksheet.max_row, 1, -1):
+        for col in range(1, worksheet.max_column + 1):
+            source_cell = worksheet.cell(row=row-1, column=col)
+            target_cell = worksheet.cell(row=row, column=col)
+            target_cell._value = source_cell._value
+            target_cell.style = source_cell.style
+    
+    # Estilos para cabeçalho de dados
+    header_font = Font(bold=True, size=11, color="FFFFFF")  # Texto branco
+    header_fill = PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid")  # Fundo vermelho
+    
+    # Definindo bordas mais espessas
+    thick_border = Border(
+        left=Side(style='medium', color='000000'),
+        right=Side(style='medium', color='000000'),
+        top=Side(style='medium', color='000000'),
+        bottom=Side(style='medium', color='000000')
+    )
+    
     thin_border = Border(
-        left=Side(style='thin'),
-        right=Side(style='thin'),
-        top=Side(style='thin'),
-        bottom=Side(style='thin')
+        left=Side(style='thin', color='000000'),
+        right=Side(style='thin', color='000000'),
+        top=Side(style='thin', color='000000'),
+        bottom=Side(style='thin', color='000000')
     )
     
     # Aplicar estilo no cabeçalho
     for cell in worksheet[1]:
         cell.font = header_font
         cell.fill = header_fill
-        cell.border = thin_border
+        cell.border = thick_border
         cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+    
+    # Fonte padrão para todas as células
+    default_font = Font(name='Arial', size=10)
     
     # Formatar todas as células com borda
     for row in worksheet.iter_rows(min_row=2, max_row=worksheet.max_row):
         for cell in row:
             cell.border = thin_border
             cell.alignment = Alignment(horizontal='center', vertical='center')
+            cell.font = default_font
+            
+    # Estilo especial para a última linha (totais)
+    for cell in worksheet[worksheet.max_row]:
+        cell.fill = PatternFill(start_color="D9D9D9", end_color="D9D9D9", fill_type="solid")
+        cell.font = Font(name='Arial', size=10, bold=True)
+        cell.border = thick_border
 
-    # Ajustar largura das colunas
+    # Ajustar largura das colunas com tamanhos mínimos
+    min_widths = {
+        'Mês': 12,
+        'NUM_FROTA': 10,
+        'DSC_MARCA': 15,
+        'DSC_TIPO': 15,
+        'ANO_MODELO_VEICULO': 10,
+        'Total Despesas': 15
+    }
+    
     for column in worksheet.columns:
+        col_letter = column[0].column_letter
+        col_name = worksheet.cell(row=1, column=column[0].column).value
+        
+        # Calcula a largura máxima do conteúdo
         max_length = 0
-        column = list(column)
         for cell in column:
             try:
-                if len(str(cell.value)) > max_length:
-                    max_length = len(str(cell.value))
+                if cell.value:
+                    max_length = max(max_length, len(str(cell.value)))
             except:
                 pass
-        adjusted_width = (max_length + 2)
-        worksheet.column_dimensions[column[0].column_letter].width = adjusted_width
+                
+        # Usa o valor mínimo definido ou calculado
+        min_width = min_widths.get(col_name, 10)  # valor padrão de 10 se não especificado
+        adjusted_width = max(min_width, max_length + 2)
+        
+        worksheet.column_dimensions[col_letter].width = adjusted_width
+    
+    # Criar botão Menu no topo da planilha
+    menu_cell = 'Q1'  # Posição do botão Menu (ajuste conforme necessário)
+    worksheet[menu_cell] = "Menu"
+    worksheet[menu_cell].font = Font(name='Arial', size=11, bold=True, color="FFFFFF")
+    worksheet[menu_cell].fill = PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid")
+    worksheet[menu_cell].border = Border(
+        left=Side(style='thick', color='000000'),
+        right=Side(style='thick', color='000000'),
+        top=Side(style='thick', color='000000'),
+        bottom=Side(style='thick', color='000000')
+    )
+    worksheet[menu_cell].alignment = Alignment(horizontal='center', vertical='center')
+    worksheet.column_dimensions[menu_cell[0]].width = 15  # Largura da coluna do Menu
+        
+    # Congelar painel no cabeçalho
+    worksheet.freeze_panes = 'A2'
 
     # Aplicar formatação específica para cada tipo de coluna
     for idx, col_name in enumerate(tabela.columns, 1):
         col_letter = worksheet.cell(row=1, column=idx).column_letter
         
         # Colunas monetárias
-        if any(word in col_name for word in ['Despesas', 'Combustível', 'Pedágios', 'Viagens']):
+        if any(word in col_name for word in ['Despesas', 'Combustível', 'Pedágios', 'Viagens', 'Comb.', 'Lub.']):
             for row in range(2, worksheet.max_row + 1):
                 cell = worksheet[f"{col_letter}{row}"]
                 cell.number_format = 'R$ #,##0.00'
+                # Alinhamento à direita para valores monetários
+                cell.alignment = Alignment(horizontal='right', vertical='center')
                 if col_name == 'Total Despesas':
-                    cell.fill = PatternFill(start_color='D3D3D3', end_color='D3D3D3', fill_type='solid')
+                    cell.fill = PatternFill(start_color='D9D9D9', end_color='D9D9D9', fill_type='solid')
+                    cell.font = Font(name='Arial', size=10, bold=True)
         
-        # Colunas de quilometragem
-        elif 'KM' in col_name:
+        # Colunas de quilometragem ou números inteiros
+        elif any(term in col_name for term in ['KM', 'Qtd', 'Quantidade']):
             for row in range(2, worksheet.max_row + 1):
                 cell = worksheet[f"{col_letter}{row}"]
                 cell.number_format = '#,##0'
+                cell.alignment = Alignment(horizontal='right', vertical='center')
                 
-        # Colunas de data
-        elif 'Mês' in col_name:
+        # Colunas de texto (como Mês, NUM_FROTA, etc)
+        else:
             for row in range(2, worksheet.max_row + 1):
                 cell = worksheet[f"{col_letter}{row}"]
-                cell.alignment = Alignment(horizontal='center')
+                cell.alignment = Alignment(horizontal='center', vertical='center')
     
     # Adicionar filtros no cabeçalho
     worksheet.auto_filter.ref = worksheet.dimensions
