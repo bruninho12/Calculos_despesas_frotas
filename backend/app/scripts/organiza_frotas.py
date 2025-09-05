@@ -27,15 +27,8 @@ def converter_numero(valor):
     except:
         return 0.0
 
-def criar_botao_menu(worksheet, posicao):
-    """Cria um botão de Menu estilizado na posição especificada"""
-    from openpyxl.drawing.shapes import Shape
-    from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
-    
-    cell = worksheet[posicao]
-    
-    # Estilo do botão Menu
-    cell.value = "Menu"
+def estilizar_celula_botao(cell):
+    """Aplica estilo de botão a uma célula"""
     cell.font = Font(name='Arial', size=11, bold=True, color="FFFFFF")
     cell.fill = PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid")
     cell.border = Border(
@@ -48,13 +41,28 @@ def criar_botao_menu(worksheet, posicao):
 
 # Permitir argumentos: custos, frotas, saida
 if len(sys.argv) >= 3:
-    caminho_custos = sys.argv[1]
-    caminho_frotas = sys.argv[2]
-    caminho_saida = sys.argv[3] if len(sys.argv) > 3 else 'planilha_organizada.xlsx'
+    caminho_custos = os.path.abspath(sys.argv[1])
+    caminho_frotas = os.path.abspath(sys.argv[2])
+    caminho_saida = os.path.abspath(sys.argv[3] if len(sys.argv) > 3 else 'planilha_organizada.xlsx')
 else:
     caminho_custos = 'CUSTO 01-01 A 31-05 teste.xlsx'
     caminho_frotas = 'Relação de frotas.xlsx'
     caminho_saida = 'planilha_organizada.xlsx'
+
+# Verificar se os arquivos existem
+for caminho, desc in [(caminho_custos, 'custos'), (caminho_frotas, 'frotas')]:
+    if not os.path.exists(caminho):
+        print(f"Erro: Arquivo de {desc} não encontrado: {caminho}")
+        sys.exit(1)
+
+# Garantir que o diretório de saída existe
+diretorio_saida = os.path.dirname(caminho_saida)
+if diretorio_saida and not os.path.exists(diretorio_saida):
+    try:
+        os.makedirs(diretorio_saida)
+    except Exception as e:
+        print(f"Erro ao criar diretório de saída: {str(e)}")
+        sys.exit(1)
 
 # Leitura das planilhas com tratamento de números
 custos = pd.read_excel(caminho_custos, dtype={'NUM_FROTA': str})
@@ -242,19 +250,30 @@ try:
         
         worksheet.column_dimensions[col_letter].width = adjusted_width
     
-    # Criar botão Menu no topo da planilha
-    menu_cell = 'Q1'  # Posição do botão Menu (ajuste conforme necessário)
-    worksheet[menu_cell] = "Menu"
-    worksheet[menu_cell].font = Font(name='Arial', size=11, bold=True, color="FFFFFF")
-    worksheet[menu_cell].fill = PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid")
-    worksheet[menu_cell].border = Border(
-        left=Side(style='thick', color='000000'),
-        right=Side(style='thick', color='000000'),
-        top=Side(style='thick', color='000000'),
-        bottom=Side(style='thick', color='000000')
-    )
-    worksheet[menu_cell].alignment = Alignment(horizontal='center', vertical='center')
-    worksheet.column_dimensions[menu_cell[0]].width = 15  # Largura da coluna do Menu
+    try:
+        # Criar botão Menu no topo da planilha
+        menu_cell = 'Q1'  # Posição do botão Menu
+        worksheet[menu_cell] = "Menu"
+        estilizar_celula_botao(worksheet[menu_cell])
+        worksheet.column_dimensions[menu_cell[0]].width = 15  # Largura da coluna do Menu
+
+        # Adicionar outros botões
+        botoes = [
+            ('R1', 'RODOTREM'),
+            ('S1', 'TRUCK'),
+            ('T1', 'CAVALO RESERVA'),
+            ('U1', 'GRANELEIRA'),
+            ('V1', 'BI-CAÇAMBA'),
+            ('W1', 'ÍNDICES')
+        ]
+
+        for pos, texto in botoes:
+            worksheet[pos] = texto
+            estilizar_celula_botao(worksheet[pos])
+            worksheet.column_dimensions[pos[0]].width = max(15, len(texto) + 2)
+    except Exception as e:
+        print(f"Aviso: Não foi possível criar todos os botões: {str(e)}")
+        # Continua a execução mesmo se houver erro nos botões
         
     # Congelar painel no cabeçalho
     worksheet.freeze_panes = 'A2'
