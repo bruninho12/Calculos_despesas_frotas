@@ -7,6 +7,11 @@ from typing import Dict, List, Any, Optional
 
 router = APIRouter()
 
+@router.get("/teste-km/")
+async def teste_km_endpoint():
+    """Endpoint simples para testar se os endpoints de KM estão funcionando"""
+    return {"status": "success", "message": "Endpoint de KM rodados funcionando!"}
+
 @router.post("/teste-upload/")
 async def teste_upload(
     planilha_km: Optional[UploadFile] = File(None),
@@ -185,6 +190,11 @@ async def processar_km_rodados(
     - Custo / Km Rodado (Total Despesas / Km Rodados)
     - Média Consumo (Km/L ou L/Hr) (Km Rodados / Qtd Litros Consumidos)
     """
+    print(f"PROCESSAMENTO KM - Iniciando processamento")
+    print(f"Arquivo KM: {planilha_km.filename if planilha_km else 'None'}")
+    print(f"Arquivo Organizada: {planilha_organizada.filename if planilha_organizada else 'None'}")
+    print(f"Skip validation: {skip_validation}")
+    
     try:
         # Validar tipos de arquivo
         if not planilha_km.filename.endswith(('.xlsx', '.xls')):
