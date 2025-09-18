@@ -1,17 +1,13 @@
 import React, { useState } from "react";
-import {
-  Button,
-  Box,
-  Typography,
-  LinearProgress,
-  Grid,
-  Alert,
-} from "@mui/material";
+import { Button, Box, Typography, Grid } from "@mui/material";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import ProcessarKM from "./components/ProcessarKM";
 import Header from "./components/Header";
 import UploadForm from "./components/UploadForm";
+import ProgressBar from "./components/ProgressBar";
+import SkipNavigation from "./components/SkipNavigation";
+import { useNotification } from "./contexts/NotificationContext";
 
 import DataTable from "./components/DataTable";
 import CorrespondenciaInfo from "./components/CorrespondenciaInfo";
@@ -24,13 +20,11 @@ import {
 function App() {
   const [planilhaCustos, setPlanilhaCustos] = useState(null);
   const [relacaoFrotas, setRelacaoFrotas] = useState(null);
-  const [mensagem, setMensagem] = useState("");
-  const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(false);
   const [progresso, setProgresso] = useState(0);
   const [telaAtual, setTelaAtual] = useState("inicial");
   const [planilhaProcessada, setPlanilhaProcessada] = useState(null);
-  const [alertOpen, setAlertOpen] = useState(false);
+  const { showError, showSuccess, showInfo } = useNotification();
   const [previewData, setPreviewData] = useState({
     custos: null,
     frotas: null,
@@ -42,8 +36,6 @@ function App() {
 
   const handleSelectFile = (arquivo, type) => {
     if (arquivo) {
-      setErro("");
-
       if (type === "custos") {
         setPlanilhaCustos(arquivo);
         setPreviewData((prev) => ({
@@ -66,15 +58,12 @@ function App() {
 
   const carregarPrevia = async () => {
     if (!planilhaCustos || !relacaoFrotas) {
-      setErro("Selecione ambas as planilhas para visualizar a prévia.");
-      setAlertOpen(true);
+      showError("Selecione ambas as planilhas para visualizar a prévia.");
       return;
     }
 
     setCarregando(true);
-    setErro("");
-    setMensagem("Carregando prévia dos dados...");
-    setAlertOpen(true);
+    showInfo("Carregando prévia dos dados...");
 
     const formData = new FormData();
     formData.append("planilha_custos", planilhaCustos);
@@ -96,32 +85,27 @@ function App() {
           ...data.previa,
           mostrarPrevia: true,
         });
-        setMensagem("Prévia carregada com sucesso!");
+        showSuccess("Prévia carregada com sucesso!");
       } else {
-        setErro(data.message || "Erro ao carregar prévia dos dados.");
+        showError(data.message || "Erro ao carregar prévia dos dados.");
       }
     } catch (err) {
-      setErro(`Erro ao conectar com o servidor: ${err.message}`);
+      showError(`Erro ao conectar com o servidor: ${err.message}`);
     } finally {
       setCarregando(false);
-      setAlertOpen(true);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setMensagem("");
-    setErro("");
 
     if (!planilhaCustos) {
-      setErro("Selecione a Planilha de Custos.");
-      setAlertOpen(true);
+      showError("Selecione a Planilha de Custos.");
       return;
     }
 
     if (!relacaoFrotas) {
-      setErro("Selecione a Relação de Frotas.");
-      setAlertOpen(true);
+      showError("Selecione a Relação de Frotas.");
       return;
     }
 
@@ -162,10 +146,10 @@ function App() {
         if (planilhaFile instanceof File) {
           setPlanilhaProcessada(planilhaFile);
         } else {
-          setErro("Falha ao preparar arquivo para a próxima etapa.");
+          showError("Falha ao preparar arquivo para a próxima etapa.");
         }
       } catch (fileError) {
-        setErro(
+        showError(
           "Erro ao preparar arquivo para a próxima etapa: " + fileError.message
         );
       }
@@ -178,13 +162,12 @@ function App() {
       a.remove();
       window.URL.revokeObjectURL(url);
 
-      setMensagem("Processamento concluído! O download foi iniciado.");
+      showSuccess("Processamento concluído! O download foi iniciado.");
       setTimeout(() => setTelaAtual("processar-km"), 2000);
     } catch (err) {
-      setErro(err?.message || "Erro de conexão com o servidor.");
+      showError(err?.message || "Erro de conexão com o servidor.");
     } finally {
       setCarregando(false);
-      setAlertOpen(true);
     }
   };
 
@@ -194,46 +177,16 @@ function App() {
     if (planilhaProcessada) {
       setTelaAtual("processar-km");
     } else {
-      setErro("Você precisa processar as planilhas iniciais primeiro!");
-      setAlertOpen(true);
+      showError("Você precisa processar as planilhas iniciais primeiro!");
     }
   };
 
-  const handleCloseAlert = () => setAlertOpen(false);
-
   return (
     <PageContainer>
+      <SkipNavigation />
       <Header />
-      <Box
-        sx={{
-          backgroundColor: "#2a79b9",
-          padding: "20px",
-          color: "white",
-          display: "flex",
-          alignItems: "center",
-          gap: 2,
-          mb: 3,
-        }}
-      >
-        <Typography
-          variant="h4"
-          component="h1"
-          sx={{ display: "flex", alignItems: "center", gap: 1 }}
-        >
-          <Box
-            component="img"
-            src="/frontend/src/truck-icon" // Caminho corrigido para o ícone
-            alt=""
-            sx={{ width: 40, height: 40 }}
-          />
-          Sistema de Gestão de Frotas
-        </Typography>
-        <Typography variant="subtitle1" sx={{ opacity: 0.9 }}>
-          Processamento e Análise de Dados de Frotas
-        </Typography>
-      </Box>
       {telaAtual === "processar-km" ? (
-        <ContentContainer>
+        <ContentContainer id="main-content" tabIndex="-1">
           <Button
             variant="outlined"
             startIcon={<KeyboardArrowLeftIcon />}
@@ -245,7 +198,7 @@ function App() {
           <ProcessarKM planilhaOrganizada={planilhaProcessada} />
         </ContentContainer>
       ) : (
-        <ContentContainer>
+        <ContentContainer id="main-content" tabIndex="-1">
           <form onSubmit={handleSubmit}>
             <Grid container spacing={3}>
               <Grid item xs={12}>
@@ -266,12 +219,15 @@ function App() {
                   <Box
                     sx={{
                       display: "flex",
+                      flexDirection: { xs: "column", sm: "row" },
                       gap: 2,
                       mt: 3,
+                      width: "100%",
                       "& .MuiButton-root": {
-                        py: 1.5,
-                        px: 4,
+                        py: { xs: 1.25, sm: 1.5 },
+                        px: { xs: 2, sm: 4 },
                         borderRadius: "4px",
+                        fontSize: { xs: "0.875rem", sm: "1rem" },
                       },
                     }}
                   >
@@ -285,6 +241,7 @@ function App() {
                         "&:hover": {
                           backgroundColor: "#e0e0e0",
                         },
+                        flex: { sm: 1 },
                       }}
                       fullWidth
                     >
@@ -299,6 +256,7 @@ function App() {
                         "&:hover": {
                           backgroundColor: "#1976d2",
                         },
+                        flex: { sm: 1 },
                       }}
                       fullWidth
                     >
@@ -307,17 +265,11 @@ function App() {
                   </Box>
 
                   {carregando && (
-                    <Box sx={{ width: "100%", mt: 2 }}>
-                      <LinearProgress variant="determinate" value={progresso} />
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        align="center"
-                        sx={{ mt: 1 }}
-                      >
-                        {progresso}% Concluído
-                      </Typography>
-                    </Box>
+                    <ProgressBar
+                      progress={progresso}
+                      isIndeterminate={progresso === 0}
+                      animate={true}
+                    />
                   )}
                 </StyledPaper>
               </Grid>
@@ -398,26 +350,6 @@ function App() {
             </Grid>
           </form>
         </ContentContainer>
-      )}
-
-      {(erro || mensagem) && alertOpen && (
-        <Box
-          sx={{
-            position: "fixed",
-            top: 16,
-            left: "50%",
-            transform: "translateX(-50%)",
-            zIndex: 9999,
-          }}
-        >
-          <Alert
-            severity={erro ? "error" : "success"}
-            onClose={handleCloseAlert}
-            sx={{ minWidth: "300px" }}
-          >
-            {erro || mensagem}
-          </Alert>
-        </Box>
       )}
     </PageContainer>
   );

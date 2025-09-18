@@ -28,6 +28,12 @@ wheels/
 *.egg
 MANIFEST
 
+# Arquivos de backup e temporários
+*.bak
+*.temp
+*.tmp
+*~
+
 # Logs
 *.log
 logs/*.log

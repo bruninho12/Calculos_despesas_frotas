@@ -2,6 +2,7 @@ import React from "react";
 import { AppBar, Toolbar, Typography, Container, Box } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
+import ThemeToggleButton from "./ThemeToggleButton";
 
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
   background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
@@ -11,21 +12,25 @@ const StyledAppBar = styled(AppBar)(({ theme }) => ({
   borderRadius: theme.shape.borderRadius,
 }));
 
-const LogoBox = styled(Box)(({ theme }) => ({
-  display: "flex",
-  alignItems: "center",
-  gap: theme.spacing(2),
-}));
-
 const StyledToolbar = styled(Toolbar)(({ theme }) => ({
   paddingTop: theme.spacing(2),
   paddingBottom: theme.spacing(2),
-  flexDirection: "column",
+  display: "flex",
+  justifyContent: "space-between",
   alignItems: "center",
-  textAlign: "center",
-  [theme.breakpoints.up("sm")]: {
-    flexDirection: "row",
-    justifyContent: "center",
+  [theme.breakpoints.down("sm")]: {
+    flexDirection: "column",
+    gap: theme.spacing(2),
+  },
+}));
+
+const HeaderContent = styled(Box)(({ theme }) => ({
+  display: "flex",
+  alignItems: "center",
+  gap: theme.spacing(2),
+  [theme.breakpoints.down("sm")]: {
+    flexDirection: "column",
+    textAlign: "center",
   },
 }));
 
@@ -34,7 +39,7 @@ const Header = () => {
     <StyledAppBar position="static">
       <Container maxWidth="lg">
         <StyledToolbar>
-          <LogoBox>
+          <HeaderContent>
             <LocalShippingIcon sx={{ fontSize: 40 }} />
             <Box>
               <Typography
@@ -48,7 +53,8 @@ const Header = () => {
                 Processamento e Análise de Dados de Frotas
               </Typography>
             </Box>
-          </LogoBox>
+          </HeaderContent>
+          <ThemeToggleButton />
         </StyledToolbar>
       </Container>
     </StyledAppBar>

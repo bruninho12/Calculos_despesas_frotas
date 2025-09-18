@@ -5,7 +5,6 @@ import {
   Typography,
   Button,
   CircularProgress,
-  Alert,
   Table,
   TableBody,
   TableCell,
@@ -24,6 +23,8 @@ import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import { useNotification } from "../contexts/NotificationContext";
+import ProgressBar from "./ProgressBar";
 
 // URL base para a API
 const API_BASE_URL = "https://frota-api-qro2.onrender.com";
@@ -62,8 +63,8 @@ function ProcessarKM({ planilhaOrganizada }) {
   const [planilhaKMNome, setPlanilhaKMNome] = useState(null);
   const [resultado, setResultado] = useState(null);
   const [carregando, setCarregando] = useState(false);
-  const [erro, setErro] = useState("");
-  const [mensagem, setMensagem] = useState("");
+  const [progresso, setProgresso] = useState(0);
+  const { showError, showSuccess, showInfo } = useNotification();
   const [previewData, setPreviewData] = useState({
     km: null,
     organizada: null,
@@ -73,7 +74,6 @@ function ProcessarKM({ planilhaOrganizada }) {
   const handleSelectFile = (e) => {
     if (e.target.files && e.target.files.length > 0) {
       const arquivo = e.target.files[0];
-      setErro("");
       setPlanilhaKM(arquivo);
       setPlanilhaKMNome(arquivo.name);
       setPreviewData((prev) => ({ ...prev, mostrarPrevia: false }));
@@ -85,20 +85,20 @@ function ProcessarKM({ planilhaOrganizada }) {
 
   const carregarPrevia = async () => {
     if (!planilhaKM || !planilhaOrganizada) {
-      setErro("Selecione a planilha de KM rodados para visualizar a prévia.");
+      showError("Selecione a planilha de KM rodados para visualizar a prévia.");
       return;
     }
 
     if (!(planilhaOrganizada instanceof File)) {
-      setErro(
+      showError(
         "Planilha organizada não é válida. Por favor, reinicie o processo."
       );
       return;
     }
 
     setCarregando(true);
-    setErro("");
-    setMensagem("Carregando prévia dos dados de KM rodados...");
+    showInfo("Carregando prévia dos dados de KM rodados...");
+    setProgresso(30);
 
     const formData = new FormData();
     formData.append("planilha_km", planilhaKM);
@@ -110,6 +110,8 @@ function ProcessarKM({ planilhaOrganizada }) {
         body: formData,
       });
 
+      setProgresso(70);
+
       if (response.ok) {
         const data = await response.json();
         if (data.status === "success") {
@@ -118,18 +120,19 @@ function ProcessarKM({ planilhaOrganizada }) {
             ...data.previa,
             mostrarPrevia: true,
           });
-          setMensagem("Prévia carregada com sucesso!");
+          setProgresso(100);
+          showSuccess("Prévia carregada com sucesso!");
         } else {
-          setErro(data.message || "Erro ao carregar prévia dos dados de KM.");
+          showError(data.message || "Erro ao carregar prévia dos dados de KM.");
         }
       } else {
         const errorText = await response.text();
-        setErro(
+        showError(
           `Erro ${response.status}: ${response.statusText} - ${errorText}`
         );
       }
     } catch (err) {
-      setErro(`Erro ao conectar com o servidor: ${err.message}`);
+      showError(`Erro ao conectar com o servidor: ${err.message}`);
     } finally {
       setCarregando(false);
     }
@@ -137,20 +140,20 @@ function ProcessarKM({ planilhaOrganizada }) {
 
   const processarDados = async () => {
     if (!planilhaKM || !planilhaOrganizada) {
-      setErro("Selecione a planilha de KM rodados para continuar.");
+      showError("Selecione a planilha de KM rodados para continuar.");
       return;
     }
 
     if (!(planilhaOrganizada instanceof File)) {
-      setErro(
+      showError(
         "Planilha organizada não é válida. Por favor, reinicie o processo."
       );
       return;
     }
 
     setCarregando(true);
-    setErro("");
-    setMensagem("Processando dados...");
+    showInfo("Processando dados...");
+    setProgresso(15);
 
     const formData = new FormData();
     formData.append("planilha_km", planilhaKM);
@@ -163,8 +166,11 @@ function ProcessarKM({ planilhaOrganizada }) {
         body: formData,
       });
 
+      setProgresso(60);
+
       if (response.ok) {
         const blob = await response.blob();
+        setProgresso(80);
         const url = window.URL.createObjectURL(blob);
         const filename =
           response.headers
@@ -178,8 +184,10 @@ function ProcessarKM({ planilhaOrganizada }) {
         document.body.appendChild(a);
         a.click();
         a.remove();
+        window.URL.revokeObjectURL(url);
 
-        setMensagem(
+        setProgresso(100);
+        showSuccess(
           "Processamento concluído com sucesso! O download foi iniciado."
         );
         setResultado({
@@ -189,12 +197,12 @@ function ProcessarKM({ planilhaOrganizada }) {
         });
       } else {
         const errorText = await response.text();
-        setErro(
+        showError(
           `Erro ${response.status}: ${response.statusText} - ${errorText}`
         );
       }
     } catch (err) {
-      setErro(`Erro ao conectar com o servidor: ${err.message}`);
+      showError(`Erro ao conectar com o servidor: ${err.message}`);
     } finally {
       setCarregando(false);
     }
@@ -207,7 +215,7 @@ function ProcessarKM({ planilhaOrganizada }) {
         sx={{
           bgcolor: "#2a79b9",
           color: "white",
-          p: 3,
+          p: { xs: 2, sm: 3 },
           mb: 3,
           borderRadius: 2,
         }}
@@ -219,89 +227,90 @@ function ProcessarKM({ planilhaOrganizada }) {
             display: "flex",
             alignItems: "center",
             gap: 2,
+            flexWrap: "wrap",
+            fontSize: { xs: "1.5rem", sm: "2rem", md: "2.25rem" },
           }}
         >
           <Box
             component="img"
             src="/truck-icon.png"
             alt=""
-            sx={{ width: 40, height: 40 }}
+            sx={{ width: { xs: 32, sm: 40 }, height: { xs: 32, sm: 40 } }}
           />
           Processar Planilha KM Rodados
         </Typography>
-        <Typography variant="subtitle1" sx={{ mt: 1, opacity: 0.9 }}>
+        <Typography
+          variant="subtitle1"
+          sx={{
+            mt: 1,
+            opacity: 0.9,
+            fontSize: { xs: "0.875rem", sm: "1rem" },
+          }}
+        >
           Processamento e Análise de Dados de Frotas
         </Typography>
       </Paper>
 
-      {(erro || mensagem) && (
-        <Alert
-          severity={erro ? "error" : "success"}
-          sx={{ mb: 3 }}
-          onClose={() => (erro ? setErro("") : setMensagem(""))}
-        >
-          {erro || mensagem}
-          {erro?.includes("Colunas") && (
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="body2" gutterBottom>
-                <strong>Informação:</strong> O sistema agora foi atualizado para
-                calcular automaticamente as métricas necessárias a partir dos
-                dados brutos.
-              </Typography>
-              <Typography variant="body2" gutterBottom>
-                <strong>Colunas necessárias na planilha:</strong>
-              </Typography>
-              <List dense>
-                <ListItem>
-                  <ListItemIcon>
-                    <InfoIcon color="primary" fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="NUM_FROTA"
-                    secondary="Identificador da frota"
-                  />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon>
-                    <InfoIcon color="primary" fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="KM_ATUAL"
-                    secondary="Quilometragem atual no momento do registro"
-                  />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon>
-                    <InfoIcon color="primary" fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="DTA_MOVIMENTO"
-                    secondary="Data do registro"
-                  />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon>
-                    <InfoIcon color="info" fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="QTDE_ITEM (opcional)"
-                    secondary="Para calcular litros consumidos"
-                  />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon>
-                    <InfoIcon color="info" fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="DSC_TIPO_DESPESAS (opcional)"
-                    secondary="Para identificar abastecimentos"
-                  />
-                </ListItem>
-              </List>
-            </Box>
-          )}
-        </Alert>
-      )}
+      <Paper elevation={2} sx={{ mb: 3, p: 3 }}>
+        <Typography variant="h6" gutterBottom color="primary">
+          Informação Importante
+        </Typography>
+        <Typography variant="body2" gutterBottom>
+          <strong>Informação:</strong> O sistema agora foi atualizado para
+          calcular automaticamente as métricas necessárias a partir dos dados
+          brutos.
+        </Typography>
+        <Typography variant="body2" gutterBottom>
+          <strong>Colunas necessárias na planilha:</strong>
+        </Typography>
+        <List dense>
+          <ListItem>
+            <ListItemIcon>
+              <InfoIcon color="primary" fontSize="small" />
+            </ListItemIcon>
+            <ListItemText
+              primary="NUM_FROTA"
+              secondary="Identificador da frota"
+            />
+          </ListItem>
+          <ListItem>
+            <ListItemIcon>
+              <InfoIcon color="primary" fontSize="small" />
+            </ListItemIcon>
+            <ListItemText
+              primary="KM_ATUAL"
+              secondary="Quilometragem atual no momento do registro"
+            />
+          </ListItem>
+          <ListItem>
+            <ListItemIcon>
+              <InfoIcon color="primary" fontSize="small" />
+            </ListItemIcon>
+            <ListItemText
+              primary="DTA_MOVIMENTO"
+              secondary="Data do registro"
+            />
+          </ListItem>
+          <ListItem>
+            <ListItemIcon>
+              <InfoIcon color="info" fontSize="small" />
+            </ListItemIcon>
+            <ListItemText
+              primary="QTDE_ITEM (opcional)"
+              secondary="Para calcular litros consumidos"
+            />
+          </ListItem>
+          <ListItem>
+            <ListItemIcon>
+              <InfoIcon color="info" fontSize="small" />
+            </ListItemIcon>
+            <ListItemText
+              primary="DSC_TIPO_DESPESAS (opcional)"
+              secondary="Para identificar abastecimentos"
+            />
+          </ListItem>
+        </List>
+      </Paper>
 
       <Paper elevation={2}>
         <UploadBox>
@@ -391,13 +400,26 @@ function ProcessarKM({ planilhaOrganizada }) {
             </Typography>
           </Box>
 
-          <Box sx={{ display: "flex", gap: 2, mt: 3 }}>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: { xs: "column", sm: "row" },
+              gap: 2,
+              mt: 3,
+              width: "100%",
+            }}
+          >
             <Button
               variant="outlined"
               onClick={carregarPrevia}
               disabled={carregando || !planilhaKM || !planilhaOrganizada}
               startIcon={<VisibilityIcon />}
-              sx={{ flex: 1 }}
+              sx={{
+                flex: { sm: 1 },
+                py: { xs: 1.25, sm: 1.5 },
+                fontSize: { xs: "0.875rem", sm: "1rem" },
+              }}
+              fullWidth
             >
               Visualizar Prévia
             </Button>
@@ -412,11 +434,25 @@ function ProcessarKM({ planilhaOrganizada }) {
                   <CloudUploadIcon />
                 )
               }
-              sx={{ flex: 1 }}
+              sx={{
+                flex: { sm: 1 },
+                py: { xs: 1.25, sm: 1.5 },
+                fontSize: { xs: "0.875rem", sm: "1rem" },
+              }}
+              fullWidth
             >
               {carregando ? "Processando..." : "Processar Planilhas"}
             </Button>
           </Box>
+
+          {carregando && (
+            <ProgressBar
+              progress={progresso}
+              isIndeterminate={progresso === 0}
+              animate={true}
+              text="Processando dados..."
+            />
+          )}
         </UploadBox>
       </Paper>
 

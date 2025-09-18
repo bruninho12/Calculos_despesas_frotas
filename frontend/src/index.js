@@ -1,9 +1,12 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
-import theme from "./theme";
 import GlobalStyles from "./components/GlobalStyles";
+import { ThemeProvider } from "./contexts/ThemeContext";
+import { NotificationProvider } from "./contexts/NotificationContext";
+import { AccessibilityProvider } from "./contexts/AccessibilityContext";
+import AccessibilityStyles from "./styles/AccessibilityStyles";
+import AccessibilityMenu from "./components/AccessibilityMenu";
 import App from "./App";
 import * as serviceWorkerRegistration from "./serviceWorkerRegistration";
 import reportWebVitals from "./reportWebVitals";
@@ -11,10 +14,16 @@ import reportWebVitals from "./reportWebVitals";
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <React.StrictMode>
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <GlobalStyles />
-      <App />
+    <ThemeProvider>
+      <NotificationProvider>
+        <AccessibilityProvider>
+          <CssBaseline />
+          <GlobalStyles />
+          <AccessibilityStyles />
+          <App />
+          <AccessibilityMenu />
+        </AccessibilityProvider>
+      </NotificationProvider>
     </ThemeProvider>
   </React.StrictMode>
 );
