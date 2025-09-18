@@ -1,108 +1,128 @@
 # Sistema de Processamento de Planilhas de Frotas
 
-Este sistema permite processar planilhas de custos de frotas e gerar relatÛrios organizados.
+Este sistema permite processar planilhas de custos de frotas e gerar relat√≥rios organizados. Agora com **integra√ß√£o com Power BI** para an√°lises avan√ßadas!
 
 ## Estrutura do Projeto
 
-`
+```
 PROJETO_FROTA2/
 +-- backend/                    # Servidor API FastAPI
-¶   +-- app/                    # CÛdigo da aplicaÁ„o backend
-¶   ¶   +-- main.py            # Ponto de entrada da API
-¶   ¶   +-- routers/           # Endpoints da API
-¶   ¶   ¶   +-- km_rodados.py  # Processamento de planilhas de KM
-¶   ¶   +-- scripts/           # Scripts auxiliares
-¶   +-- data/                   # Dados da aplicaÁ„o
-¶   ¶   +-- uploads/           # Arquivos enviados pelos usu·rios
-¶   ¶   +-- historico/         # Resultados histÛricos
-¶   +-- logs/                   # Logs da aplicaÁ„o
-¶   +-- tests/                  # Testes unit·rios e integraÁ„o
-¶   +-- requirements.txt        # DependÍncias Python
-¶   +-- run.py                  # Script para iniciar o servidor
-¶   +-- start.bat               # Script para iniciar o servidor (Windows)
-¶
+|   +-- app/                    # C√≥digo da aplica√ß√£o backend
+|   |   +-- main.py             # Ponto de entrada da API
+|   |   +-- routers/            # Endpoints da API
+|   |   |   +-- km_rodados.py   # Processamento de planilhas de KM
+|   |   |   +-- powerbi.py      # Download de templates Power BI
+|   |   +-- scripts/            # Scripts auxiliares
+|   |   +-- static/             # Arquivos est√°ticos
+|   |       +-- templates/      # Templates Power BI
+|   +-- data/                   # Dados da aplica√ß√£o
+|   |   +-- uploads/            # Arquivos enviados pelos usu√°rios
+|   |   +-- historico/          # Resultados hist√≥ricos
+|   +-- logs/                   # Logs da aplica√ß√£o
+|   +-- tests/                  # Testes unit√°rios e integra√ß√£o
+|   +-- requirements.txt        # Depend√™ncias Python
+|   +-- run.py                  # Script para iniciar o servidor
+|   +-- start.bat               # Script para iniciar o servidor (Windows)
+|
 +-- frontend/                   # Interface web React
-¶   +-- public/                 # Arquivos est·ticos
-¶   +-- src/                    # CÛdigo fonte React
-¶   ¶   +-- components/        # Componentes React
-¶   ¶   ¶   +-- ProcessarKM.js # Componente para processamento de KM
-¶   ¶   +-- styles/            # Estilos da aplicaÁ„o
-¶   ¶   +-- App.js             # Componente principal
-¶   +-- package.json            # DependÍncias e configuraÁıes
-¶   +-- start.bat               # Script para iniciar o frontend (Windows)
-¶
+|   +-- public/                 # Arquivos est√°ticos
+|   +-- src/                    # C√≥digo fonte React
+|   |   +-- components/         # Componentes React
+|   |   |   +-- ProcessarKM.js  # Componente para processamento de KM
+|   |   +-- styles/             # Estilos da aplica√ß√£o
+|   |   +-- App.js              # Componente principal
+|   +-- package.json            # Depend√™ncias e configura√ß√µes
+|   +-- start.bat               # Script para iniciar o frontend (Windows)
+|
 +-- dados-exemplo/              # Exemplos de arquivos para processamento
-+-- docs/                       # DocumentaÁ„o do projeto
-¶   +-- GUIA_IMPLANTACAO.md     # Guia de implantaÁ„o
-¶   +-- RENDER_DEPLOY.md        # InstruÁıes para Render
-¶   +-- VERCEL_DEPLOY.md        # InstruÁıes para Vercel
++-- docs/                       # Documenta√ß√£o do projeto
+|   +-- GUIA_IMPLANTACAO.md     # Guia de implanta√ß√£o
+|   +-- RENDER_DEPLOY.md        # Instru√ß√µes para Render
+|   +-- VERCEL_DEPLOY.md        # Instru√ß√µes para Vercel
++-- POWER_BI_README.md          # Instru√ß√µes do Power BI
 +-- scripts/                    # Scripts de utilidades
-¶   +-- build.bat               # Script para construir o projeto para produÁ„o
-¶   +-- deploy.bat              # Script para implantaÁ„o
-¶   +-- iniciar_sistema.bat     # Script para iniciar o sistema completo
-¶   +-- limpar_temporarios.bat  # Script para limpar arquivos tempor·rios
-+-- .gitignore                  # ConfiguraÁ„o de arquivos a ignorar no Git
-+-- iniciar.bat                 # Menu para escolher operaÁıes do sistema
-+-- README.md                   # Este arquivo de documentaÁ„o
-`
+|   +-- build.bat               # Script para construir o projeto para produ√ß√£o
+|   +-- deploy.bat              # Script para implanta√ß√£o
+|   +-- iniciar_sistema.bat     # Script para iniciar o sistema completo
+|   +-- limpar_temporarios.bat  # Script para limpar arquivos tempor√°rios
++-- .gitignore                  # Configura√ß√£o de arquivos a ignorar no Git
++-- iniciar.bat                 # Menu para escolher opera√ß√µes do sistema
++-- README.md                   # Este arquivo de documenta√ß√£o
+```
+
+## Novidades
+
+### Integra√ß√£o com Power BI
+
+O sistema agora oferece integra√ß√£o com Power BI, permitindo:
+
+- Download de templates Power BI prontos para uso
+- Conex√£o direta com os dados processados
+- Dashboards e visualiza√ß√µes interativas
+- An√°lises avan√ßadas dos dados de frota
+
+Para mais detalhes, consulte o [Guia de Integra√ß√£o com Power BI](./POWER_BI_README.md).
 
 ## Requisitos
 
 ### Backend
 
 - Python 3.8+
-- Bibliotecas listadas em ackend/requirements.txt
+- Bibliotecas listadas em backend/requirements.txt
 
 ### Frontend
 
 - Node.js 18+
-- DependÍncias NPM listadas em rontend/package.json
+- Depend√™ncias NPM listadas em frontend/package.json
+
+### Power BI (opcional)
+
+- Power BI Desktop (para uso das funcionalidades de an√°lise avan√ßada)
 
 ## Como Iniciar o Sistema
 
-### MÈtodo R·pido (Windows)
+### M√©todo R√°pido (Windows)
 
-1. Execute o script iniciar.bat na raiz do projeto
-2. Escolha a opÁ„o 1 para iniciar o sistema completo
-3. O sistema iniciar· automaticamente o backend e o frontend
+1. Execute o script `iniciar.bat` na raiz do projeto
+2. Escolha a op√ß√£o 1 para iniciar o sistema completo
+3. O sistema iniciar√° automaticamente o backend e o frontend
 4. Acesse http://localhost:3000 no seu navegador
 
 ### Backend (Manual)
 
-1. Navegue atÈ a pasta ackend
-2. Execute o script start.bat (Windows) ou python run.py (Linux/Mac)
-3. O servidor estar· disponÌvel em http://localhost:8000
+1. Navegue at√© a pasta `backend`
+2. Execute o script `start.bat` (Windows) ou `python run.py` (Linux/Mac)
+3. O servidor estar√° dispon√≠vel em http://localhost:8000
 
 ### Frontend (Manual)
 
-1. Navegue atÈ a pasta rontend
-2. Execute o script start.bat (Windows) ou 
-pm start (Linux/Mac)
-3. O aplicativo web estar· disponÌvel em http://localhost:3000
+1. Navegue at√© a pasta `frontend`
+2. Execute o script `start.bat` (Windows) ou `npm start` (Linux/Mac)
+3. O aplicativo web estar√° dispon√≠vel em http://localhost:3000
 
-## Limpeza de Arquivos Tempor·rios
+## Limpeza de Arquivos Tempor√°rios
 
-Para remover arquivos tempor·rios e organizar o projeto:
+Para remover arquivos tempor√°rios e organizar o projeto:
 
-1. Execute o script iniciar.bat e escolha a opÁ„o 3
-2. Os arquivos Excel ser„o movidos para a pasta dados-exemplo
-3. DiretÛrios tempor·rios como __pycache__ ser„o removidos
+1. Execute o script `iniciar.bat` e escolha a op√ß√£o 3
+2. Os arquivos Excel ser√£o movidos para a pasta dados-exemplo
+3. Diret√≥rios tempor√°rios como __pycache__ ser√£o removidos
 
-## ImplantaÁ„o em ProduÁ„o
+## Implanta√ß√£o em Produ√ß√£o
 
-Para implantar o sistema em um ambiente de produÁ„o:
+Para implantar o sistema em um ambiente de produ√ß√£o:
 
-1. Execute o script iniciar.bat e escolha a opÁ„o 2 para compilar o projeto
+1. Execute o script `iniciar.bat` e escolha a op√ß√£o 2 para compilar o projeto
 2. Configure os arquivos .env.production no frontend e backend
-3. Execute o script iniciar.bat e escolha a opÁ„o 4 para implantar em um servidor
+3. Execute o script `iniciar.bat` e escolha a op√ß√£o 4 para implantar em um servidor
 
-Para informaÁıes detalhadas sobre implantaÁ„o, consulte a [documentaÁ„o de implantaÁ„o](./docs/README.md).
+Para informa√ß√µes detalhadas sobre implanta√ß√£o, consulte a [documenta√ß√£o de implanta√ß√£o](./docs/README.md).
 
 ## Endpoints da API
 
 ### GET /teste/
 
-Verifica se a API est· funcionando.
+Verifica se a API est√° funcionando.
 
 ### POST /teste-upload/
 
@@ -110,13 +130,46 @@ Endpoint para testar o upload de arquivos.
 
 ### POST /processar-planilhas/
 
-Processa planilhas de custos e relaÁ„o de frotas.
+Processa planilhas de custos e rela√ß√£o de frotas.
 
-**Par‚metros:**
+**Par√¢metros:**
 
 - planilha_custos - Arquivo Excel com dados de custos
-- elacao_frotas - Arquivo Excel com relaÁ„o de frotas
+- relacao_frotas - Arquivo Excel com rela√ß√£o de frotas
 
 **Resposta:**
 
 - Arquivo Excel com os dados processados
+
+### POST /processar-km/
+
+Processa planilhas de KM rodados.
+
+**Par√¢metros:**
+
+- planilha_km - Arquivo Excel com dados de KM rodados
+- planilha_organizada - Arquivo Excel processado na etapa anterior
+
+**Resposta:**
+
+- Arquivo Excel com os dados de KM processados
+
+### GET /template-powerbi/
+
+Baixa o template do Power BI para an√°lises avan√ßadas.
+
+**Resposta:**
+
+- Arquivo .pbit (template do Power BI)
+
+### GET /download-zip/{filename}
+
+Baixa um pacote ZIP com a planilha Excel e o template Power BI.
+
+**Par√¢metros:**
+
+- filename - Nome do arquivo Excel a incluir no ZIP
+
+**Resposta:**
+
+- Arquivo ZIP contendo a planilha Excel e o template Power BI

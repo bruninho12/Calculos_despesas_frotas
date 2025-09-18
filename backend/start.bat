@@ -21,6 +21,8 @@ if not exist venv (
     pip install -r requirements.txt
 ) else (
     call venv\Scripts\activate
+    echo Atualizando dependências...
+    pip install -r requirements.txt
 )
 
 echo [3/3] Iniciando servidor FastAPI...

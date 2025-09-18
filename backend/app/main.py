@@ -9,7 +9,7 @@ import subprocess
 import logging
 import time
 from datetime import datetime
-from .routers import preview, km_rodados
+from .routers import preview, km_rodados, powerbi
 
 app = FastAPI(title="API de Processamento de Planilhas de Frotas", 
              description="API para processamento de planilhas de custos e frotas",
@@ -18,6 +18,7 @@ app = FastAPI(title="API de Processamento de Planilhas de Frotas",
 # Incluir os routers
 app.include_router(preview.router, tags=["Prévia"])
 app.include_router(km_rodados.router, tags=["KM Rodados"])
+app.include_router(powerbi.router, tags=["Power BI"])
 
 # Configurar origens permitidas com base no ambiente (desenvolvimento vs. produção)
 origins = ["http://localhost:3000", "http://localhost:3001"]

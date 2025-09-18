@@ -3,8 +3,8 @@ echo =====================================================================
 echo  Sistema de Processamento de Planilhas de Frotas - Inicialização
 echo =====================================================================
 
-set BACKEND_DIR=%~dp0backend
-set FRONTEND_DIR=%~dp0frontend
+set BACKEND_DIR=%~dp0..\backend
+set FRONTEND_DIR=%~dp0..\frontend
 
 echo [1/4] Verificando requisitos...
 

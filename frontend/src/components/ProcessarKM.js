@@ -15,6 +15,10 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
+  Divider,
+  Card,
+  CardContent,
+  CardActions,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
@@ -23,6 +27,9 @@ import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import AnalyticsIcon from "@mui/icons-material/Analytics";
+import DownloadIcon from "@mui/icons-material/Download";
+import PieChartIcon from "@mui/icons-material/PieChart";
 import { useNotification } from "../contexts/NotificationContext";
 import ProgressBar from "./ProgressBar";
 
@@ -583,16 +590,126 @@ function ProcessarKM({ planilhaOrganizada }) {
           <Typography variant="body1" paragraph>
             O arquivo com os dados processados está pronto para download.
           </Typography>
-          <Button
-            href={resultado.download_url}
-            download
-            variant="contained"
-            color="primary"
-            startIcon={<CloudUploadIcon />}
-            sx={{ mb: 2 }}
+
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: { xs: "column", sm: "row" },
+              gap: 2,
+              mb: 3,
+            }}
           >
-            Baixar Planilha Final
-          </Button>
+            <Button
+              href={resultado.download_url}
+              download
+              variant="contained"
+              color="primary"
+              startIcon={<CloudUploadIcon />}
+              fullWidth
+            >
+              Baixar Planilha Excel
+            </Button>
+
+            <Button
+              href={`${API_BASE_URL}/template-powerbi/`}
+              download="Análise_Frotas_Template.pbit"
+              variant="outlined"
+              color="secondary"
+              startIcon={<PieChartIcon />}
+              fullWidth
+            >
+              Baixar Template Power BI
+            </Button>
+
+            <Button
+              href={`${API_BASE_URL}/download-latest-with-template/`}
+              download="Análise_Frotas_Completa.zip"
+              variant="outlined"
+              color="info"
+              startIcon={<DownloadIcon />}
+              fullWidth
+            >
+              Baixar Pacote Completo (ZIP)
+            </Button>
+          </Box>
+
+          <Divider sx={{ my: 2 }} />
+
+          <Card
+            sx={{ mt: 3, bgcolor: "#f8f9fa", borderLeft: "4px solid #2a79b9" }}
+          >
+            <CardContent>
+              <Box
+                sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}
+              >
+                <AnalyticsIcon color="primary" />
+                <Typography variant="h6" color="primary">
+                  Visualize seus dados com Power BI
+                </Typography>
+              </Box>
+
+              <Typography variant="body2" paragraph>
+                Agora você pode analisar seus dados no Power BI seguindo estes
+                passos:
+              </Typography>
+
+              <List dense>
+                <ListItem>
+                  <ListItemIcon>
+                    <ArrowForwardIcon color="primary" fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="Baixe o template Power BI"
+                    secondary="Use o botão acima para baixar o arquivo .pbit"
+                  />
+                </ListItem>
+                <ListItem>
+                  <ListItemIcon>
+                    <ArrowForwardIcon color="primary" fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="Abra o template no Power BI Desktop"
+                    secondary="Dê um duplo clique no arquivo .pbit baixado"
+                  />
+                </ListItem>
+                <ListItem>
+                  <ListItemIcon>
+                    <ArrowForwardIcon color="primary" fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="Selecione seu arquivo Excel"
+                    secondary="Quando solicitado, indique o arquivo Excel que você baixou"
+                  />
+                </ListItem>
+                <ListItem>
+                  <ListItemIcon>
+                    <ArrowForwardIcon color="primary" fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="Analise seus dados"
+                    secondary="Explore os dashboards, filtros e visualizações interativas"
+                  />
+                </ListItem>
+              </List>
+
+              <Typography variant="body2" sx={{ mt: 2, fontStyle: "italic" }}>
+                O pacote ZIP contém tanto o arquivo Excel quanto o template
+                Power BI em um único download.
+              </Typography>
+            </CardContent>
+            <CardActions sx={{ px: 2, pb: 2 }}>
+              <Button
+                variant="text"
+                color="primary"
+                size="small"
+                href="https://powerbi.microsoft.com/desktop/"
+                target="_blank"
+              >
+                Baixar Power BI Desktop
+              </Button>
+            </CardActions>
+          </Card>
+
           <Box sx={{ mt: 2 }}>
             <Typography variant="body2">
               <strong>Nome do arquivo:</strong> {resultado.filename}

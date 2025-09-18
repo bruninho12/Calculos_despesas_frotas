@@ -315,6 +315,41 @@ function App() {
               )}
 
               <Grid item xs={12}>
+                <StyledPaper
+                  sx={{
+                    bgcolor: "#e3f2fd",
+                    borderLeft: "4px solid #1976d2",
+                    mb: 2,
+                  }}
+                >
+                  <Box
+                    sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}
+                  >
+                    <Box
+                      component="img"
+                      src="/truck-icon.png"
+                      alt=""
+                      sx={{ width: 32, height: 32, mt: 0.5 }}
+                    />
+                    <Box>
+                      <Typography variant="h6" color="primary" gutterBottom>
+                        NOVIDADE: Integração com Power BI
+                      </Typography>
+                      <Typography variant="body1" paragraph>
+                        Agora você pode visualizar seus dados diretamente no
+                        Power BI! Após processar suas planilhas na segunda
+                        etapa, você poderá baixar um template do Power BI para
+                        análises avançadas e visuais interativos.
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Basta processar suas planilhas normalmente e na tela
+                        final você terá a opção de baixar o template do Power BI
+                        junto com seus dados.
+                      </Typography>
+                    </Box>
+                  </Box>
+                </StyledPaper>
+
                 <StyledPaper>
                   <Typography variant="h6" color="primary" gutterBottom>
                     Como funciona?
@@ -342,7 +377,8 @@ function App() {
                     </Typography>
                     <Typography component="li" variant="body1">
                       Após o processamento, você poderá avançar para a{" "}
-                      <strong>Segunda Etapa</strong> para processar KM rodados
+                      <strong>Segunda Etapa</strong> para processar KM rodados e
+                      usar o <strong>Power BI</strong>
                     </Typography>
                   </Box>
                 </StyledPaper>
