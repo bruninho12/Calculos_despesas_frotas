@@ -17,10 +17,26 @@ async def download_power_bi_template():
     template_path = os.path.join(TEMPLATE_DIR, "frotas_template.pbit")
     
     if not os.path.exists(template_path):
-        raise HTTPException(
-            status_code=404, 
-            detail="Template Power BI não encontrado. Entre em contato com o administrador."
-        )
+        # Se o template não existir, criar um arquivo de instruções como alternativa
+        instructions_path = os.path.join(TEMPLATE_DIR, "README.txt")
+        if os.path.exists(instructions_path):
+            return FileResponse(
+                path=instructions_path,
+                filename="Instruções_Template_PowerBI.txt",
+                media_type="text/plain"
+            )
+        else:
+            # Se nem mesmo o arquivo de instruções existir, retornar um erro mais amigável
+            return StreamingResponse(
+                io.StringIO("Este é um arquivo de instruções temporário para o Power BI.\n\n"
+                           "Para criar um template real do Power BI:\n"
+                           "1. Abra o Power BI Desktop\n"
+                           "2. Crie seu relatório usando dados de exemplo\n"
+                           "3. Salve como template (.pbit)\n"
+                           "4. Coloque o arquivo na pasta backend/app/static/templates/\n"),
+                media_type="text/plain",
+                headers={"Content-Disposition": f'attachment; filename="Instruções_Template_PowerBI.txt"'}
+            )
     
     return FileResponse(
         path=template_path,
@@ -41,17 +57,12 @@ async def download_zip(filename: str):
     
     # Verificar se o arquivo Power BI template existe
     template_path = os.path.join(TEMPLATE_DIR, "frotas_template.pbit")
+    instructions_path = os.path.join(TEMPLATE_DIR, "README.txt")
     
     if not os.path.exists(excel_path):
         raise HTTPException(
             status_code=404, 
             detail=f"Planilha Excel não encontrada: {filename}"
-        )
-    
-    if not os.path.exists(template_path):
-        raise HTTPException(
-            status_code=404, 
-            detail="Template Power BI não encontrado. Entre em contato com o administrador."
         )
     
     # Criar um arquivo ZIP em memória
@@ -61,8 +72,22 @@ async def download_zip(filename: str):
         # Adicionar a planilha Excel
         zip_file.write(excel_path, arcname=f"planilha_{filename}")
         
-        # Adicionar o template Power BI
-        zip_file.write(template_path, arcname="Análise_Frotas_Template.pbit")
+        # Adicionar o template Power BI ou o arquivo de instruções
+        if os.path.exists(template_path):
+            zip_file.write(template_path, arcname="Análise_Frotas_Template.pbit")
+        elif os.path.exists(instructions_path):
+            zip_file.write(instructions_path, arcname="Instruções_Template_PowerBI.txt")
+        else:
+            # Se nenhum arquivo existir, criar um arquivo de instruções em memória
+            instructions_content = ("Este é um arquivo de instruções temporário para o Power BI.\n\n"
+                                    "Para criar um template real do Power BI:\n"
+                                    "1. Abra o Power BI Desktop\n"
+                                    "2. Crie seu relatório usando dados de exemplo\n"
+                                    "3. Salve como template (.pbit)\n"
+                                    "4. Coloque o arquivo na pasta backend/app/static/templates/\n")
+            
+            # Adicionar o arquivo de instruções ao ZIP
+            zip_file.writestr("Instruções_Template_PowerBI.txt", instructions_content)
     
     # Preparar o buffer para leitura
     zip_buffer.seek(0)

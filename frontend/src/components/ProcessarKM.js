@@ -612,22 +612,24 @@ function ProcessarKM({ planilhaOrganizada }) {
 
             <Button
               href={`${API_BASE_URL}/template-powerbi/`}
-              download="Análise_Frotas_Template.pbit"
+              download
               variant="outlined"
               color="secondary"
               startIcon={<PieChartIcon />}
               fullWidth
+              title="Baixe o template Power BI ou instruções para criar um"
             >
               Baixar Template Power BI
             </Button>
 
             <Button
               href={`${API_BASE_URL}/download-latest-with-template/`}
-              download="Análise_Frotas_Completa.zip"
+              download
               variant="outlined"
               color="info"
               startIcon={<DownloadIcon />}
               fullWidth
+              title="Baixe um pacote contendo a planilha Excel e o template Power BI (ou instruções)"
             >
               Baixar Pacote Completo (ZIP)
             </Button>
@@ -649,8 +651,7 @@ function ProcessarKM({ planilhaOrganizada }) {
               </Box>
 
               <Typography variant="body2" paragraph>
-                Agora você pode analisar seus dados no Power BI seguindo estes
-                passos:
+                Agora você pode analisar seus dados no Power BI:
               </Typography>
 
               <List dense>
@@ -659,8 +660,8 @@ function ProcessarKM({ planilhaOrganizada }) {
                     <ArrowForwardIcon color="primary" fontSize="small" />
                   </ListItemIcon>
                   <ListItemText
-                    primary="Baixe o template Power BI"
-                    secondary="Use o botão acima para baixar o arquivo .pbit"
+                    primary="Baixe o template Power BI ou instruções"
+                    secondary="Use o botão acima para baixar o arquivo necessário"
                   />
                 </ListItem>
                 <ListItem>
@@ -668,8 +669,8 @@ function ProcessarKM({ planilhaOrganizada }) {
                     <ArrowForwardIcon color="primary" fontSize="small" />
                   </ListItemIcon>
                   <ListItemText
-                    primary="Abra o template no Power BI Desktop"
-                    secondary="Dê um duplo clique no arquivo .pbit baixado"
+                    primary="Se receber um arquivo de instruções"
+                    secondary="Siga as orientações para criar um template personalizado"
                   />
                 </ListItem>
                 <ListItem>
@@ -677,8 +678,8 @@ function ProcessarKM({ planilhaOrganizada }) {
                     <ArrowForwardIcon color="primary" fontSize="small" />
                   </ListItemIcon>
                   <ListItemText
-                    primary="Selecione seu arquivo Excel"
-                    secondary="Quando solicitado, indique o arquivo Excel que você baixou"
+                    primary="Se receber um arquivo .pbit"
+                    secondary="Dê duplo clique e selecione sua planilha Excel quando solicitado"
                   />
                 </ListItem>
                 <ListItem>
@@ -692,9 +693,19 @@ function ProcessarKM({ planilhaOrganizada }) {
                 </ListItem>
               </List>
 
+              <Typography
+                variant="body2"
+                sx={{ mt: 2, color: "#d32f2f", fontWeight: "medium" }}
+              >
+                Importante: Os arquivos .pbit (template Power BI) SÓ podem ser
+                criados usando o Power BI Desktop. Se você receber um erro de
+                arquivo corrompido, siga as instruções para criar um template
+                válido.
+              </Typography>
+
               <Typography variant="body2" sx={{ mt: 2, fontStyle: "italic" }}>
-                O pacote ZIP contém tanto o arquivo Excel quanto o template
-                Power BI em um único download.
+                O pacote ZIP contém o arquivo Excel e o template Power BI (ou
+                instruções) em um único download.
               </Typography>
             </CardContent>
             <CardActions sx={{ px: 2, pb: 2 }}>
